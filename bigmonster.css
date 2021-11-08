@@ -1,0 +1,1008 @@
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * BigMonster implementation : © Nicolas Matton (nicolas@locla.be)
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * bigmonster.css
+ *
+ * BigMonster stylesheet
+ *
+ */
+
+/*
+    This is the CSS stylesheet of your game User Interface.
+    
+    Styles defined on this file will be applied to the HTML elements you define in your
+    HTML template (bigmonster_bigmonster.tpl), and to HTML elements you create dynamically
+    (in bigmonster.js).
+    
+    Usually, you are using CSS to:
+    
+    1°) define the overall layout of your game
+        (ex: place the board on the top left, place player's hand beside, place the deck on the right, ...).
+
+    2°) create your CSS-sprites:
+        All images of your games should be gathered into a small number of image files. Then, using
+        background-image and background-position CSS properties, you create HTML blocks that can 
+        display these images correctly (see example below).
+    
+    3°) ... anything else:
+        It is really easy to add and remove CSS classes dynamically from your Javascript with
+        dojo.addClass and dojo.removeClass. It is also easy to check if an element has a class
+        (dojo.hasClass) or to get all elements with a specific class (dojo.query). This is why,
+        very often, using CSS classes for the logic of your user interface allow you to do complex
+        thing easily.
+        
+        
+     Note: on the production platform, this file will be compressed and comments will be removed.
+           Consequently, don't hesitate to put as many comments as necessary.
+*/
+
+
+/* Note: you must not use any @import directive */
+
+
+/********* You can start writing your CSS below this line: **********/
+
+
+/*
+    Example of CSS sprites (a black token and a white token, 20x20px each, embedded in the same "tokens.png" 40x20px image):
+
+    .white_token {
+        background-image: url('img/tokens.png');
+        background-position: 0px 0px;
+    }
+    .black_token {
+        background-image: url('img/tokens.png');
+        background-position: -20px 0px;
+    }
+    .token {
+        width: 20px;
+        height: 20px;
+        background-repeat: none;
+    }
+*/
+/** Scrollable area **/
+
+:root {
+    --body-text-color: #5c5957;
+    --body-bg-color: #e2d9d5;
+    --card-border-color: #e2d9d5;
+    --card-bg-color: #fff;
+    --dashed-color: #fafafa;
+    --red: #e31b23;
+    --offset-before: 8px;
+    --offset-after: 16px;
+  }
+
+.scrollBoards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.scrollerClass {
+	position: relative;
+	height: 400px;
+	width: 46%;
+	overflow: hidden;
+	margin: 10px;
+	display: inline-block;
+	border-style: solid;
+	border-color: rgba(224, 232, 255, .56);
+	background-color: rgba(224, 232, 255, .56)
+}
+
+.scroller_noclick, .scroller_clickable {
+    position: absolute;
+    top: 205px;
+    left:  315px;
+}
+.scroller_surface {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    cursor: move;
+}
+.movetop,.moveleft,.moveright,.movedown {
+    display: block;
+    position: absolute;
+    background-image: url('../../../img/common/arrows.png');
+    width: 32px;
+    height: 32px;
+}
+.movetop {
+    top: 0px;
+    left: 50%;
+    background-position: 0px 32px;
+}
+.moveleft {
+    top: 50%;
+    left: 0px;
+    background-position: 32px 0px;
+}
+.moveright {
+    top: 50%;
+    right: 0px;
+    background-position: 0px 0px;
+}
+.movedown {
+    bottom: 0px;
+    left: 50%;
+    background-position: 32px 32px;
+}
+
+/** This is some extra stuff to extend the container **/
+
+#map_footer {
+    text-align: center;
+}
+
+/** ships **/
+
+.bm_flex-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+.bm_flex-container > div {
+    margin: 10px;
+    padding: 20px;
+    text-shadow: #ffffff 0 0 10px;
+    font-weight: bold;
+    font-size: 1em;
+    height: 120px;
+    width: 120px;
+    text-align: center;
+    align-items: center;
+    background-image: url(img/ship.jpg);
+    background-size: contain;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bm_fitin {
+    width: 300px;
+    height: 200px;
+    overflow: hidden;
+    font-size: 1em;
+    overflow: visible;
+}
+
+.bm_selectable {
+    cursor: pointer;
+    animation: blink .5s step-end infinite alternate;
+}
+
+@keyframes blink { 
+    50% { outline: 3px dashed #fff; } 
+ }
+
+/** Tiles on the boards (not in deck) **/
+
+.bm_tileClass {
+    width: 50px;
+    height: 100px;
+    background-image: url(img/monster_tiles_1-4.jpg);
+    background-size: 900% auto;
+}
+
+.bm_tileClassH1 {
+    width: 50px;
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bm_tileClassH1::before {
+    content: "";
+    top: -50%;
+    left: 25%;
+    width: 50px;
+    height: 100px;
+    position: absolute;
+    background-image: url(img/monster_tiles_1-4.jpg);
+    background-size: 900% auto;
+    z-index: -1;
+    transform: rotate(-90deg);
+    background-position: -50px -100px;
+}
+
+.bm_tileClassH2 {
+    width: 50px;
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bm_tileClassH2::before {
+    content: "";
+    top: -50%;
+    left: 25%;
+    width: 50px;
+    height: 100px;
+    position: absolute;
+    background-image: url(img/monster_tiles_1-4.jpg);
+    background-size: 900% auto;
+    z-index: -1;
+    transform: rotate(-90deg);
+    background-position: 0px -100px;
+}
+
+
+.bm_exploTileClass {
+    width: 100px;
+    height: 100px;
+    background-image: url(img/explo_1-2.jpg);
+    background-size: 300% auto;
+}
+
+/* Tile on stock element */
+
+.bm_tileArea {
+    border-radius: 15px;
+}
+
+.bm_margin_stock {
+    margin: 10px !important;
+}
+
+
+#upper_row {
+    grid-column-start: 1;
+    grid-row-start: 2;
+}
+
+#lower_row {
+    grid-column-start: 1;
+    grid-row-start: 3;
+}
+
+.bm_gridded {
+    display: grid;
+    grid-template-columns: [first] 90% [end];
+    grid-template-rows: [first] 15px [row1] 140px [row2] 140px;
+}
+
+#bm_title_board{
+    grid-column-start: 1;
+    grid-row-start: 1;
+}
+
+
+/* CARD STYLES
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+.card {
+    position: relative;
+    margin: 60px auto;
+    grid-area: 2/2/3/2;
+  }
+  
+  .card::before,
+  .card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50px;
+    height: 100px;
+  }
+  
+  .card::before,
+  .card::after,
+  .card .card-inner {
+    transition: transform 0.3s;
+    top: 0;
+    background-image: url(img/monster_tiles_1-4.jpg);
+    background-position: 0 -800% !important;
+    background-size: 900% auto;
+    outline: #e7e7e77d solid 1px;
+    text-align: center;
+    display: table-cell;
+    vertical-align: middle;
+    color:white;
+    font-size: 2em;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  }
+  
+  .card::before,
+  .card-inner {
+    z-index: 1;
+  }
+  
+  .card-inner {
+    position: relative;
+  }
+  
+  
+  /*TOP LEFT*/
+  .card-top-left::before {
+    transform: translate(
+      calc(-1 * var(--offset-before)),
+      calc(-1 * var(--offset-before))
+    );
+  }
+  
+  .card-top-left::after {
+    transform: translate(
+      calc(-1 * var(--offset-after)),
+      calc(-1 * var(--offset-after))
+    );
+  }
+  
+  .card-top-left:hover::before,
+  .card-top-left:hover::after,
+  .card-top-left:hover .card-inner {
+    transform: translate(calc(-1 * var(--offset-before)), 0);
+  }
+  
+
+
+/* Medals */
+.medal_area {
+    display: flex;
+    margin: 5px;
+    perspective: 1000px;
+    flex-wrap: wrap;
+}
+
+.medal_area_inner {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    margin-right: 5px;
+    text-align: center;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+}
+
+.medal_area_inner .medal{
+    width: 50px;
+    height: 50px;
+}
+
+.medal_area_inner .back_medal {
+    width: 50px;
+    height: 50px;
+}
+
+.medal_area_inner:hover {
+    transform: rotateY(180deg);
+}
+
+.medal_area_inner.flipped {
+    transform: rotateY(180deg);
+}
+
+
+.medal {
+    position: absolute;
+    background-image: url(img/medals_1-4.png);
+    background-size: 1000% auto;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+    box-shadow: 0.1em 0.1em 0.1em 0.01em #555;
+    border-radius:50px; /* must match the width*/
+    margin-right: 0.1em;
+}
+
+.medal_stock {
+    display: flex;
+    margin: 5px;
+    perspective: 1000px;
+}
+
+.medal_stock .medal_area_inner {
+    width: 75px;
+    height: 75px;
+    display: flex;
+}
+
+.medal_stock .medal {
+    width: 75px;
+    height: 75px;
+}
+
+.medal_stock .back_medal {
+    width: 75px;
+    height: 75px;
+}
+
+.first_player {
+    background-position: 0% -200%;
+    width: 50px;
+    height: 50px;
+    position: relative;
+}
+
+.medal[medal-id="1"] {
+    background-position-x: -0%;
+}
+
+.medal[medal-id="2"] {
+    background-position-x: -100%;
+}
+
+.medal[medal-id="3"] {
+    background-position-x: -200%;
+}
+
+.medal[medal-id="4"] {
+    background-position-x: -300%;
+}
+
+.medal[medal-id="5"] {
+    background-position-x: -400%;
+}
+
+.medal[medal-id="6"] {
+    background-position-x: -500%;
+}
+
+.medal[medal-id="7"] {
+    background-position-x: -600%;
+}
+
+.medal[medal-id="8"] {
+    background-position-x: -700%;
+}
+
+.medal[medal-id="9"] {
+    background-position-x: -800%;
+}
+
+.medal[medal-id="10"] {
+    background-position-x: -900%;
+}
+
+.medal[medal-type="1"] {
+    background-position-y: -0%;
+}
+
+.medal[medal-type="2"] {
+    background-position-y: -100%;
+}
+
+
+.back_medal {
+    position: absolute;
+    background-image: url(img/medals_1-4.png);
+    background-size: 1000% auto;
+    transform: rotateY(180deg);
+}
+
+.back_medal[data-id='1'] {
+    background-position-x: -00%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='2'] {
+    background-position-x: -100%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='3'] {
+    background-position-x: -200%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='4'] {
+    background-position-x: -300%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='5'] {
+    background-position-x: -400%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='6'] {
+    background-position-x: -500%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='7'] {
+    background-position-x: -600%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='8'] {
+    background-position-x: -700%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='9'] {
+    background-position-x: -800%;
+    background-position-y: -200%;
+}
+
+.back_medal[data-id='10'] {
+    background-position-x: -900%;
+    background-position-y: -200%;
+}
+
+
+
+.stock_front_medal {
+    -webkit-backface-visibility: hidden; /* Safari */
+    backface-visibility: hidden;
+}
+
+.stock_front_medal:hover {
+    transform: rotateY(180deg);
+}
+
+
+/* possible move on the board*/
+
+.possibleMoveV {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    opacity: 0.6;
+    border: 1px #3177f8 solid;
+    box-shadow: inset 0px 0px 10px #3177f8;
+    transition: height 1s, top 1s, left 1s, opacity 1s;
+  }
+
+
+.possibleMoveH {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    opacity: 0.6;
+    border: 1px #3177f8 solid;
+    box-shadow: inset 0px 0px 10px #3177f8;
+    transition: width 1s, top 1s, left 1s, opacity 1s;
+}
+
+
+.possibleMoveV:hover{
+    height: 100px;
+}
+
+.possibleMoveH:hover{
+    width: 100px;
+}
+
+.hidden_pos {
+    opacity: 0;
+}
+/** back side of tile **/
+
+.backtile{
+    background-position: 0 -800% !important;
+    position: relative;
+    top: 10%;
+    left: 0%;
+  }
+
+/** popup starting explorer **/
+
+#bm_popup {
+	position: fixed;
+	border-style: outset;
+	background-color: #faebd7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+	font-weight: 700;
+	padding: 4px;
+	left: 40%;
+	top: 40%;
+	height: auto;
+	width: 480px;
+	margin: -100px -150px;
+	z-index: 10;
+}
+
+#bm_popup .bm_popin_title {
+    font-size: 25px;
+}
+
+#selectingExploDiv{
+    display: flex;
+    width: 100%;
+    justify-content: space-evenly;
+}
+
+#exploInfo {
+    color: rgb(243 243 243);
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    font-size: 12px;
+    width: 100px;
+    margin-bottom: 15px;
+}
+
+
+#conf_expl_btn {
+    margin-bottom: 10px;
+}
+
+.bm_exploTileClass.selected {
+    outline: 6px solid red;
+}
+
+.stockitem.selected{
+    outline: 3px dashed green;
+    margin-left: 1px;
+}
+
+.stockitem.disabled{
+    box-shadow: inset 0 0 0 1000px rgb(255 255 255 / 48%);
+}
+
+.bm_accept {
+    background-color: #ed6755;
+    cursor:pointer;
+    border: none;
+    border-radius: 5px;
+    width: 200px;
+    padding: 14px;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0px 6px 18px -5px rgba(237, 103, 85, 1);
+}
+
+.bm_accept-pending {
+    background-color: #4d3b38;
+    border: none;
+    border-radius: 5px;
+    width: 200px;
+    padding: 14px;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0px 6px 18px -5px rgb(89, 78, 76);
+}
+
+/* switch */
+
+.bm_faceSelector {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 5px;
+    width: 10%;
+    max-width: 100px;
+    min-width: 80px;
+}
+
+.bm_switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+  }
+
+/* Hide default HTML checkbox */
+.bm_switch input {
+opacity: 0;
+width: 0;
+height: 0;
+}
+
+/* The slider */
+.bm_slider {
+position: absolute;
+cursor: pointer;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: #ccc;
+-webkit-transition: .4s;
+transition: .4s;
+}
+
+.bm_slider:before {
+position: absolute;
+content: "";
+height: 16px;
+width: 16px;
+left: 4px;
+bottom: 4px;
+background-color: white;
+-webkit-transition: .4s;
+transition: .4s;
+}
+
+input:checked + .bm_slider {
+background-color: #2196F3;
+}
+
+input:focus + .bm_slider {
+box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .bm_slider:before {
+-webkit-transform: translateX(26px);
+-ms-transform: translateX(26px);
+transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.bm_slider.round {
+border-radius: 34px;
+}
+
+.bm_slider.round:before {
+border-radius: 50%;
+}
+
+/* help modal */
+#help-icon {
+height: 35px;
+width: 35px;
+margin-left: auto;
+cursor: pointer; }
+#help-icon:hover {
+    color: grey; }
+#help-icon svg {
+    width: 100%;
+    height: 100%; }
+
+.bm_popin {
+width: auto;
+position: relative;
+background: url("img/background_help.jpg");
+background-size: contain;
+padding: 10px 15px;
+border-radius: 8px;
+border: 3px solid #6a5a9d;
+box-shadow: 1px 1px 5px #444; }
+
+.bm_popin h2 {
+    color: rgb(243 243 243);
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    font-size: 30px;
+    padding: 3px 90px;
+    text-align: center; }
+
+.bm_popin .bm_popin_closeicon {
+    background-color: #6a5a9d;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: -19px;
+    right: -19px;
+    font-size: 90%;
+    color: white !important;
+    display: flex;
+    justify-content: center;
+    align-items: center; }
+    .bm_popin .bm_popin_closeicon:hover {
+        text-decoration: none;
+        color: #CCC !important;
+        transform: scale(1.1); }
+    .bm_popin .bm_popin_closeicon i {
+        margin-top: -2px; }
+
+#popin_playersHelp {
+margin-top: 90px;
+max-width: 75%; }
+#popin_playersHelp #dialog-playerhelp {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    flex-wrap: wrap; }
+    #popin_playersHelp #dialog-playerhelp .help_tile-img {
+        background-image: url(img/player_aid_1-2.jpg);
+        background-size: 200% auto;
+        width: 250px;
+        height: 250px;
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+        border-radius: 7px;
+        border: 1px solid rgba(0, 0, 0, 0.4);
+        box-shadow: 2px 2px 5px #111; }
+
+.indiv_play{
+    background-position-x: -0%;
+}
+
+.team_play{
+    background-position-x: -100%;
+}
+
+/* game scoring table */
+
+
+#game-scoring {
+    text-align: center;
+    padding: 10px 0;
+    display: none;
+  }
+  #game-scoring table {
+    margin: auto;
+  }
+    #game-scoring table td {
+        padding: 10px;
+    }
+    #game-scoring table td.first-column {
+        border-right: 2px solid rgb(0, 0, 0);
+    }
+    #game-scoring table tr.line-below {
+        border-bottom: 2px solid rgb(0, 0, 0);
+    }
+  #game-scoring i.icon {
+    vertical-align: middle;
+    margin-left: 10px;
+  }
+  #game-scoring .arrow {
+    margin-right: 10px;
+    visibility: hidden;
+  }
+
+  
+i.icon {
+    background-image: url(img/score_icons.png);
+    display: inline-block;
+  }
+  
+
+i.icon-ice {
+background-position: 0% 0%;
+width: 37px;
+height: 69px;
+background-size: 1214%;
+}
+
+i.icon-bigmonster {
+background-position: 10.4% 0%;
+width: 69px;
+height: 69px;
+background-size: 650% auto;
+}
+
+i.icon-lava {
+background-position: 27.5% 0%;
+width: 37px;
+height: 69px;
+background-size: 1180%;
+}
+
+i.icon-grassland {
+background-position: 36.5% 0%;
+width: 37px;
+height: 69px;
+background-size: 1180%;
+}
+    
+i.icon-swamp {
+background-position: 50% 0%;
+width: 69px;
+height: 69px;
+background-size: 650%;
+}
+    
+i.icon-diamonds {
+background-position: 60% 0%;
+width: 69px;
+height: 69px;
+background-size: 650%;
+}
+
+i.icon-explorer {
+background-position: 88.5% 0%;
+width: 69px;
+height: 69px;
+background-size: 650%;
+}
+
+
+i.icon-medal {
+background-position: 100% 0%;
+width: 37px;
+height: 69px;
+background-size: 1180%;
+}
+        
+@keyframes wave {
+    from { transform : translateY( 1px ); }
+    to   { transform : translateY( -3px ); }
+  }
+
+.wavetext span {
+    display: inline-block;
+   
+    animation-duration: 0.3s;
+    animation-name: wave;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+  
+  .wavetext :nth-child( 20n + 0 ) {
+      animation-delay : 
+        calc(-20s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 1 ) {
+    animation-delay : 
+      calc(-19s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 2 ) {
+    animation-delay : 
+      calc(-18s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 3 ) {
+    animation-delay : 
+      calc(-17s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 4 ) {
+    animation-delay : 
+      calc(-16s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 5 ) {
+    animation-delay : 
+      calc(-15s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 6 ) {
+    animation-delay : 
+      calc(-14s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 7 ) {
+    animation-delay : 
+      calc(-13s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 8 ) {
+    animation-delay : 
+      calc(-12s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 9 ) {
+    animation-delay : 
+      calc(-11s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 10 ) {
+    animation-delay : 
+      calc(-10s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 11 ) {
+    animation-delay : 
+      calc(-9s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 12 ) {
+    animation-delay : 
+      calc(-8s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 13 ) {
+    animation-delay : 
+      calc(-7s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 14 ) {
+    animation-delay : 
+      calc(-6s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 15 ) {
+    animation-delay : 
+      calc(-5s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 16 ) {
+    animation-delay : 
+      calc(-4s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 17 ) {
+    animation-delay : 
+      calc(-3s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 18 ) {
+    animation-delay : 
+      calc(-2s * 2 * 0.3 / 40 );
+  }
+  .wavetext :nth-child( 20n + 19 ) {
+    animation-delay : 
+      calc(-1s * 2 * 0.3 / 40 );
+  }
