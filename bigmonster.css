@@ -377,6 +377,8 @@
 }
 
 .medal_area_inner:hover {
+    -webkit-transform: rotateY(180deg);
+    -moz-transform: rotateY(180deg);
     transform: rotateY(180deg);
 }
 
@@ -394,6 +396,7 @@
     box-shadow: 0.1em 0.1em 0.1em 0.01em #555;
     border-radius:50px; /* must match the width*/
     margin-right: 0.1em;
+    z-index: 2;
 }
 
 .medal_stock {
@@ -533,13 +536,11 @@
 
 
 
-.stock_front_medal {
+.medal,
+.back_medal {
     -webkit-backface-visibility: hidden; /* Safari */
+    -moz-backface-visibility: hidden;
     backface-visibility: hidden;
-}
-
-.stock_front_medal:hover {
-    transform: rotateY(180deg);
 }
 
 
