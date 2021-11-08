@@ -93,7 +93,9 @@ function (dojo, declare) {
                 }
             }
             for (var t of Object.keys(gamedatas.players)) {
-                this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                if (this.boards.includes(t)) {
+                    this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                }
             }           
             // **** PLAYERS BOARDS SETUP **** //
 
@@ -404,7 +406,7 @@ function (dojo, declare) {
         //
         onEnteringState: function( stateName, args )
         {
-            console.log('entering stage' + stateName);
+            //console.log('entering stage' + stateName);
             
             switch( stateName )
             {
@@ -801,7 +803,7 @@ function (dojo, declare) {
         sendCardToShip: function(player_id)
         {
             var t = player_id;
-            if (this.checkAction('selectShip', true) && this.tile_selected && ((t != this.player_id && !this.busyShips.includes(toint(t))) || (this.explorer_id == 2 && !this.busyShips.includes(toint(t))) || (t == this.player_id && this.busyShips.length == Object.keys(this.gamedatas.players).length - 1))) {
+            if (this.checkAction('selectShip', true) && !this.lastTurn && this.tile_selected && ((t != this.player_id && !this.busyShips.includes(toint(t))) || (this.explorer_id == 2 && !this.busyShips.includes(toint(t))) || (t == this.player_id && this.busyShips.length == Object.keys(this.gamedatas.players).length - 1))) {
                 // 3 main conditions:
                 //  1/ Action "selectShip" is current
                 //  2/ A tile is selected in hand
@@ -827,6 +829,8 @@ function (dojo, declare) {
             } else if ((t == this.player_id && this.explorer_id != 2 && this.busyShips.length != this.gamedatas.playerorder.length - 1) || this.busyShips.includes(toint(t)) ) {
                 // the user is trying to put the rest of his hand on his own ship
                 this.showMessage( _("You must select the ship of another player"), "error" )
+            } else if (this.lastTurn) {
+                this.showMessage( _("You have to click the 'Select Tile' button"), "error" )
             }
         },
 
@@ -1657,7 +1661,6 @@ function (dojo, declare) {
         notif_cardsOnShip : function (notif)
         {
             var s = notif.args
-            console.log(s);
             if (this.player_id == s.player_id) {
                 // process if we are the player that made the action
                 // move the unselected cards to the ship of other player
