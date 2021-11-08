@@ -602,10 +602,11 @@
     text-align: center;
 	font-weight: 700;
 	padding: 4px;
-	left: 40%;
+	left: 45%;
 	top: 40%;
 	height: auto;
-	width: 480px;
+    width: 90%;
+    max-width: 480px;
 	margin: -100px -150px;
 	z-index: 10;
 }
