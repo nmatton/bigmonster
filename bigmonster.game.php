@@ -698,13 +698,17 @@ class BigMonster extends Table
                     $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$pid));
                     $user_count = intval($rune_count) + intval($nbr_desert_tiles);
                     if ($user_count < $total_count) {
-                        $medal_owner = array($pid);
+                        $medal_owner = $pid;
                         $total_count = $user_count;
                     } elseif ($user_count == $total_count) {
-                        $medal_owner[] = $pid;
+                        $medal_owners[] = $medal_owner;
+                        $medal_owners[] = $pid;
                     }
                 }
-                return $medal_owner;
+                if (count($medal_owners) === 0) {
+                    $medal_owners[] = $medal_owner;
+                }
+                return $medal_owners;
                 break;
             case 1:
                 // 2 complete big monsters
