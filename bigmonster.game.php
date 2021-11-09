@@ -425,6 +425,13 @@ class BigMonster extends Table
         In this space, you can put any utility methods useful for your game logic
     */
 
+    // move some cards to discard --- FOR TESTING PURPOSE
+    public function movetodiscard($n_to_move)
+    {
+        $sql = "UPDATE card c JOIN (SELECT card_id FROM `card` WHERE card_location = 'deck' LIMIT $n_to_move) as d ON d.card_id = c.card_id SET card_location = 'discard'";
+        $this->DbQuery($sql);
+    }
+
     // get current state name
     protected function getStateName() {
         $state = $this->gamestate->state();

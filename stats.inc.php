@@ -110,19 +110,23 @@ $stats_type = array(
                     "name" => totranslate("Number of green diamonds"),
                     "type" => "int" )
     
-/*
-        Examples:    
-        
-        
-        "player_teststat1" => array(   "id"=> 10,
-                                "name" => totranslate("player test stat 1"), 
-                                "type" => "int" ),
-                                
-        "player_teststat2" => array(   "id"=> 11,
-                                "name" => totranslate("player test stat 2"), 
-                                "type" => "float" )
+    ),
 
-*/    
+    "value_labels" => array(
+        10 => array(
+            1 => array(totranslate('male blue')),
+            2 => array(totranslate('black female')),
+            3 => array(totranslate('black male')),
+            4 => array(totranslate('red female')),
+            5 => array(totranslate('purple female')),
+            6 => array(totranslate('purple male')),
+            7 => array(totranslate('green female')),
+            8 => array(totranslate('orange female')),
+            9 => array(totranslate('red male')),
+            10 => array(totranslate('blue female')),
+            11 => array(totranslate('green male')),
+            12 => array(totranslate('orange male')),
+        )
     )
 
 );
