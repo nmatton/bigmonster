@@ -304,6 +304,7 @@ function (dojo, declare) {
                 player_board = $('player_board_'+t)
                 dojo.place( maDiv , player_board);
             }
+            this.medals_status = [];
 
             // insert medals
             for (const i in this.gamedatas.medals) {
@@ -321,9 +322,7 @@ function (dojo, declare) {
                         });
                         medal_area = $('medals')
                         dojo.place( cardDiv , medal_area);
-                        // add the back of the tile
-                        //var medal_wrap_div = $('medals_wrap');
-                        //dojo.place( this.format_block('jstpl_back_medal', {medal_id : medal_id, back_id : back_id} ), medal_wrap_div );
+                        this.medals_status[medal_id] = false;
                     } else {
                         // add the medal to the player area
                         location_id_list = location_id.split(',');
@@ -336,6 +335,7 @@ function (dojo, declare) {
                                 type : this.game_mode,
                                 back_id : back_id} ), player_medal_zone_div );
                         });
+                        this.medals_status[medal_id] = true;
                     }
                 }
             }
@@ -1874,7 +1874,23 @@ function (dojo, declare) {
                 var position = 'last'
             }
             dojo.place( miaDiv, target, position );
-            this.slideToObjectRelative( "medal_" + s.medal_id + "_" + this.game_mode, "mia_" + s.player_id+"_"+s.medal_id, duration, delay, 'first', this.addBackMedal(s.medal_id, s.back_id, s.player_id, duration+delay) );
+            if (!this.medals_status[s.medal_id]) {
+                this.slideToObjectRelative( "medal_" + s.medal_id + "_" + this.game_mode, "mia_" + s.player_id+"_"+s.medal_id, duration, delay, 'first', this.addBackMedal(s.medal_id, s.back_id, s.player_id, duration+delay) );
+                this.medals_status[s.medal_id] = true;
+            } else {
+                let tmp_medal = this.format_block('jstpl_front_medal', {
+                    medal_id : s.medal_id,
+                    type : this.game_mode,
+                    player_id : s.player_id,
+                });
+                let mia_div = 'mia_'+s.player_id+'_'+s.medal_id;
+                this.slideTemporaryObject( tmp_medal , mia_div, 'medals', mia_div, duration, delay );
+                setTimeout(() => {
+                    dojo.place(tmp_medal, mia_div, 'first')},duration+delay);
+                setTimeout(() => { 
+                    dojo.place( this.format_block('jstpl_back_medal', {medal_id : s.medal_id, back_id : s.back_id} ), mia_div );
+                }, duration+delay+10);
+            }
         },
 
         notif_scoreUpdate : function (notif) {
