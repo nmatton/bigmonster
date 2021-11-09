@@ -812,7 +812,10 @@ max-width: 75%; }
         border-radius: 7px;
         border: 1px solid rgba(0, 0, 0, 0.4);
         box-shadow: 2px 2px 5px #111; }
-
+    .help_tile-img.fiveplayers {
+        background-position: -100% 0%;
+    }
+    
 .indiv_play{
     background-position-x: -0%;
 }
@@ -893,7 +896,7 @@ background-size: 650%;
 }
     
 i.icon-diamonds {
-background-position: 60% 0%;
+background-position: 70% 0%;
 width: 69px;
 height: 69px;
 background-size: 650%;

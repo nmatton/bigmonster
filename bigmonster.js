@@ -356,7 +356,7 @@ function (dojo, declare) {
                 dojo.place(jstpl_helpIcon, 'ma_' + this.player_id);
 
             }
-            dojo.connect($('help-icon'), 'click', () => this.displayPlayersHelp());
+            dojo.connect($('help-icon'), 'click', () => this.displayPlayersHelp(this.nums_of_players));
             let chk = $('face_select');
             dojo.connect(chk, 'onchange', () => this.toggleMedalFace());
 
@@ -1137,17 +1137,30 @@ function (dojo, declare) {
         },
 
 
-        displayPlayersHelp() {
-            new customgame.modal('playersHelp', {
-              autoShow: true,
-              title: _('Quick help'),
-              class: 'bm_popin',
-              closeIcon: 'fa-times',
-              openAnimation: true,
-              openAnimationTarget: 'help-icon',
-              contentsTpl: jstpl_helpDialog,
-              verticalAlign: 'flex-start',
-            });
+        displayPlayersHelp(p_num) {
+            if (p_num < 5) {
+                new customgame.modal('playersHelp', {
+                  autoShow: true,
+                  title: _('Quick help'),
+                  class: 'bm_popin',
+                  closeIcon: 'fa-times',
+                  openAnimation: true,
+                  openAnimationTarget: 'help-icon',
+                  contentsTpl: jstpl_helpDialog,
+                  verticalAlign: 'flex-start',
+                });
+            } else {
+                new customgame.modal('playersHelp', {
+                  autoShow: true,
+                  title: _('Quick help'),
+                  class: 'bm_popin',
+                  closeIcon: 'fa-times',
+                  openAnimation: true,
+                  openAnimationTarget: 'help-icon',
+                  contentsTpl: jstpl_helpDialog5p,
+                  verticalAlign: 'flex-start',
+                });
+            }
           },
 
         addBackMedal : function(medal_id, back_id, player_id, totdelay){

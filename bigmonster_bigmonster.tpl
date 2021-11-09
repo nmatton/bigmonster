@@ -167,6 +167,9 @@ var jstpl_helpIcon = `
 var jstpl_helpDialog = `
 <div id="dialog-playerhelp"><div class="help_tile-img"></div></div>
 `;
+var jstpl_helpDialog5p = `
+<div id="dialog-playerhelp"><div class="help_tile-img fiveplayers"></div></div>
+`;
 var jstpl_first_player_medal = '<div id="firstplayermedal" class="medal first_player"></div>';
 $(function() {
     $('.bm_fitin div').css('font-size', '1em');
