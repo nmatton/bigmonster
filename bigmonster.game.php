@@ -343,9 +343,10 @@ class BigMonster extends Table
         $pile_size = (self::getPlayersNumber() == 2) ? 4 : 6;
         $result['remaining_piles'] = intval($this->cards->countCardInLocation( 'deck' )) / $pile_size;
         /*   *** HELP CONTENT FOR UI      ***
-        $result['help_monster'] = $this->monster_infos;
+        */
+        $result['help_monsters'] = $this->monster_infos;
         $result['help_explorers'] = $this->explorer_infos;
-        $result['help_medals'] = $this->medals_infos; */
+        $result['help_medals'] = $this->medals_infos; 
         return $result;
     }
 

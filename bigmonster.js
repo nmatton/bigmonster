@@ -113,6 +113,9 @@ function (dojo, declare) {
                     this.explorer_id = explorer_id;
                 }
                 this.placeTile(i, explorer_id,explorer_id, 0,0,0,1,0);
+                let explo_info = gamedatas.help_explorers[explorer_id]['descrtr'];
+                console.log('adding tooltip to explorer '+explorer_id+' with info : '+explo_info)
+                this.addTooltip( 'tile_e_'+explorer_id, explo_info , _('draft cards to this player'), 10 )
             }
             if (this.nums_of_players >= 4) {
                 dojo.query('.bm_exploTileClass').connect('onclick', this, 'onClickExplo');
@@ -197,11 +200,26 @@ function (dojo, declare) {
                     }
         
                     // ** SET CARDS ON HANDS ** //
+                    console.log(gamedatas.help_monsters)
                     for ( var i in this.gamedatas.hand) {
                         var card = this.gamedatas.hand[i];
-                        var type = card.type;
-                        var kind_monster = card.type_arg;
+                        var type = toint(card.type);
+                        var kind_monster = toint(card.type_arg);
                         this.playerHand.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                        console.log('type : '+ type + ' and kind : ' + kind_monster + ' with id : ' + card.id);
+                        if ( [3,5,7].includes(type) ) {
+                            var monster_name = gamedatas.help_monsters[type]['name'];
+                            var monster_descr = gamedatas.help_monsters[type]['descr'];
+                        } else {
+                            var monster_name = gamedatas.help_monsters[type][kind_monster]['name'];
+                            var monster_descr = gamedatas.help_monsters[type][kind_monster]['descr'];
+                        }
+                        if (type == 2) {
+                            var rot = "transform: rotate(-90deg);"
+                        } else {
+                            var rot = '';
+                        }
+                        this.addTooltipHtml( 'myhand_item_'+card.id, "<div style='width: 250px; text-align: center;'><div><h3>"+monster_name+"</h3><hr></div><div class='bm_tileClass tooltip_tile' style='background-position: -"+(kind_monster-1)*100+"% -"+(type-1)*100+"%; "+rot+"'></div><br><p>"+monster_descr+"</p></div>", 10 );
                     }
                     // add listeners on cards on hand
                     dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -337,6 +355,10 @@ function (dojo, declare) {
                         });
                         this.medals_status[medal_id] = true;
                     }
+                    let medal_info =  (this.game_mode == 1 ) ? gamedatas.help_medals[medal_id]['nametr'] : gamedatas.help_medals[medal_id]['nametr_team'];
+                    this.addTooltip( 'medal_'+medal_id+'_'+this.game_mode, medal_info, '', 10 )
+                    this.addTooltip( 'back_medal_'+medal_id, medal_info, '', 0 )
+                    
                 }
             }
 
