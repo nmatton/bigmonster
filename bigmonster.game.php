@@ -860,10 +860,11 @@ class BigMonster extends Table
                                     if (intval($card_details['board_x']) - 1 == intval($card_details2['board_x']) and intval($card_details['board_y']) == intval($card_details2['board_y']) and in_array('GR', $diamonds2)) {
                                         // card is placed on the left side of our "main" card and has a diamond on its right side
                                         $green_count++;
-                                    } elseif (in_array('GR', $explo_diamonds) and intval($card_details['board_x']) == 2 and intval($card_details['board_y']) == 0) {
-                                        $green_count++;
-                                    }
+                                    } 
                                 }
+                            }
+                            if (in_array('GR', $explo_diamonds) and intval($card_details['board_x']) == 2 and intval($card_details['board_y']) == 0) {
+                                $green_count++;
                             }
                             break;
                         case 'GR':
