@@ -1654,7 +1654,9 @@ function (dojo, declare) {
                     }
                 }
                 // update the number of cards remaing (extra from new turn since 2 rows are updated here)
-                dojo.query('#card_counter').innerHTML(toint($('card_counter').innerHTML)-1)
+                if (toint($('card_counter').innerHTML) > 0) {
+                    dojo.query('#card_counter').innerHTML(toint($('card_counter').innerHTML)-1);
+                }
             }
         },
 
