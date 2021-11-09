@@ -209,7 +209,7 @@ function (dojo, declare) {
                     // remove the ship area
                     dojo.destroy('ships');
                     // remove my hand title
-                    dojo.destroy('title_myhand');
+                    dojo.destroy('bm_title_myhand');
                     // update the number in card remaining count
                     dojo.query('#card_counter').innerHTML(this.gamedatas.remaining_piles)
                     // rename my_hand div and add extra row for tiles selection
