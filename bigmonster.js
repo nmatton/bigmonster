@@ -65,6 +65,7 @@ function (dojo, declare) {
         
         setup: function( gamedatas )
         {
+            console.log(gamedatas);
             // SETUP SCROLL AREAS
             this.currentPlayer = gamedatas.currentPlayer;
             this.nums_of_players = Object.keys(gamedatas.players).length;
@@ -308,6 +309,10 @@ function (dojo, declare) {
                         });
                     }
                 }
+                if (gamedatas.gamestate.name == "teamSelection") {
+                    console.log('in team selection state')
+                }
+                this.isTeamPlay = gamedatas.isTeamPlay;
             }
 
             
@@ -702,7 +707,17 @@ function (dojo, declare) {
                         if (this.tile_selected) {
                             this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton' );
                         }
-                        break
+                        break;
+                    case 'teamSelection' :
+                        if (this.isTeamPlay) {
+                            console.log(this.gamedatas)
+                            Object.values(this.gamedatas.playerorder).forEach(t => {
+                                if (t != this.player_id) {
+                                    this.addActionButton('buttonSelectPlayer' + t, this.coloredPlayerName(this.gamedatas.players[t].name), () => this.selectTeamPlayer(t));
+                                }
+                            })
+                        }
+                        break;
                 }
             }
         },        
@@ -1193,11 +1208,12 @@ function (dojo, declare) {
             setTimeout(() => { dojo.destroy('stock_'+medal_id);}, 100);
         },
 
-        coloredPlayerName(name) {
+        coloredPlayerName(name, color_only=false) {
             const player = Object.values(this.gamedatas.players).find((player) => player.name == name);
             if (player == undefined) return '<!--PNS--><span class="playername">' + name + '</span><!--PNE-->';
       
             const color = player.color;
+            if (color_only) return color;
             const color_bg = player.color_back
               ? 'background-color:#' + this.gamedatas.players[this.player_id].color_back + ';'
               : '';
@@ -1241,6 +1257,15 @@ function (dojo, declare) {
         
         */
 
+        selectTeamPlayer: function(in_pID) {
+            const targer_player = in_pID;
+            if (this.checkAction('selectTeam', true)) {
+                this.ajaxcall( '/bigmonster/bigmonster/selectTeam.html', { lock: true, 
+                    player_id : this.player_id,
+                    team_player_id : targer_player
+                    }, this, function( result ) {} );
+            }
+        },
 
         onClickShipTile: function(s) {
             var t = parseInt(s.target.id.split("_")[1]);

@@ -26,33 +26,62 @@
 
 $game_options = array(
 
-    /*
-    
-    // note: game variant ID should start at 100 (ie: 100, 101, 102, ...). The maximum is 199.
-    100 => array(
-                'name' => totranslate('my game option'),    
-                'values' => array(
-
-                            // A simple value for this option:
-                            1 => array( 'name' => totranslate('option 1') )
-
-                            // A simple value for this option.
-                            // If this value is chosen, the value of "tmdisplay" is displayed in the game lobby
-                            2 => array( 'name' => totranslate('option 2'), 'tmdisplay' => totranslate('option 2') ),
-
-                            // Another value, with other options:
-                            //  description => this text will be displayed underneath the option when this value is selected to explain what it does
-                            //  beta=true => this option is in beta version right now (there will be a warning)
-                            //  alpha=true => this option is in alpha version right now (there will be a warning, and starting the game will be allowed only in training mode except for the developer)
-                            //  nobeginner=true  =>  this option is not recommended for beginners
-                            //  firstgameonly=true  =>  this option is recommended only for the first game (discovery option)
-                            3 => array( 'name' => totranslate('option 3'), 'description' => totranslate('this option does X'), 'beta' => true, 'nobeginner' => true )
-                        ),
-                'default' => 1
+    101 => array(
+        'name' => totranslate('Play mode'),
+        'values' => array(
+            1 => array(
+                'name' => totranslate('Individual mode'),
+                'description' => totranslate('Free for all mode, be the best to win against all other players'),
+                'tmdisplay' => ('Individual')
             ),
+            2 => array(
+                'name' => totranslate('Team mode'),
+                'description' => totranslate('Play in teams of 2. The final team score is the lowest score of team members'),
+                'tmdisplay' => totranslate('Team mode')
+            ),
+        ),
+        'displaycondition' => array( 
+            // Note: do not display this option unless these conditions are met
+            array(
+                'type' => 'minplayers ',
+                'value' => 4
+            ),
+            array( 
+                'type' => 'otheroption',
+                'id' => 201, // ELO OFF hardcoded framework option
+                'value' => 1, // 1 if OFF
+            )
+        ),
 
-    */
+        'startcondition' => array(
+            1 => array(),
+            2 => array(
+                array(
+                    'type' => 'minplayers',
+                    'value' => 4,
+                    'message' => totranslate('At least 4 players are required for team play.')
+                )
+            ),
+        ),
+        'notdisplayedmessage' => totranslate('Team mode available for table of 4 or 6 players with ELO disabled')
+    ),
 
+    102 => array(
+        'name' => totranslate('Hide live scores'),
+        'values' => array(
+            1 => array(
+                'name' => totranslate('No'),
+                'description' => totranslate('Show live scores'),
+                'tmdisplay' => ('')
+            ),
+            2 => array(
+                'name' => totranslate('Yes'),
+                'description' => totranslate('Hide live scores'),
+                'tmdisplay' => totranslate('Hide live scores'),
+                'nobeginner' => true
+            )
+        )
+    )
 );
 
 

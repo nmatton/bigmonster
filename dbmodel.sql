@@ -7,6 +7,10 @@
 -- See http://en.boardgamearena.com/#!doc/Studio for more information.
 -- -----
 
+ -- add info about team selected
+ ALTER TABLE `player` ADD `team_sel` int(10) NOT NULL DEFAULT 0;
+ ALTER TABLE `player` ADD `team` int(10) NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS `card` (
   `card_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `card_type` varchar(16) NOT NULL,

@@ -39,6 +39,14 @@
       }
   	} 
   	
+    public function selectTeam()
+    {
+        self::setAjaxMode();
+        $player_id = self::getArg( "player_id", AT_posint, true );
+        $team_player_id = self::getArg( "team_player_id", AT_posint, true );
+        $result = $this->game->selectTeamPlayer( $player_id, $team_player_id );
+        self::ajaxResponse( );
+    }
 
     public function selectStartingExplorer()
     {

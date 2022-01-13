@@ -36,7 +36,9 @@ class BigMonster extends Table
                          "currentTurn" => 11,
                          "game_mode" => 12,
                          "active_row" => 13,
-                         "first_player" => 14) );
+                         "first_player" => 14,
+                         "playmode" => 101,
+                         "hidescore" => 102) );
 
         $this->cards = self::getNew( "module.common.deck" );
         $this->cards->init( "card" );
@@ -346,7 +348,8 @@ class BigMonster extends Table
         */
         $result['help_monsters'] = $this->monster_infos;
         $result['help_explorers'] = $this->explorer_infos;
-        $result['help_medals'] = $this->medals_infos; 
+        $result['help_medals'] = $this->medals_infos;
+        $result['isTeamPlay'] = $this->isTeamPlay();
         return $result;
     }
 
@@ -431,6 +434,32 @@ class BigMonster extends Table
     {
         $sql = "UPDATE card c JOIN (SELECT card_id FROM `card` WHERE card_location = 'deck' LIMIT $n_to_move) as d ON d.card_id = c.card_id SET card_location = 'discard'";
         $this->DbQuery($sql);
+    }
+
+    // recursive flattening of array
+    function array_flatten($array) { 
+        if (!is_array($array)) { 
+          return false; 
+        } 
+        $result = array(); 
+        foreach ($array as $key => $value) { 
+          if (is_array($value)) { 
+            $result = array_merge($result, $this->array_flatten($value)); 
+          } else { 
+            $result = array_merge($result, array($key => $value));
+          } 
+        } 
+        return $result; 
+      }
+
+    // check if teamplay mode is selected
+    public function isTeamPlay() {
+        return intval($this->getGameStateValue('playmode')) === 2;
+    }
+
+    // check if hiding score mode is selected
+    public function hideScore() {
+        return intval($this->getGameStateValue('hidescore')) === 2;
     }
 
     // get current state name
@@ -1340,41 +1369,20 @@ class BigMonster extends Table
     }
 
 
+/******************************************************************
 
-//////////////////////////////////////////////////////////////////////////////
-//////////// Player actions
-//////////// 
+                             Player actions
 
-    /*
-        Each time a player is doing some game action, one of the methods below is called.
-        (note: each method below must match an input method in bigmonster.action.php)
-    */
+***********************************************************************/
 
-    /*
-    
-    Example:
-
-    function playCard( $card_id )
+    function selectTeamPlayer( $player_id, $team_player_id)
     {
-        // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
-        self::checkAction( 'playCard' ); 
-        
-        $player_id = self::getActivePlayerId();
-        
-        // Add your game logic to play a card there 
-        ...
-        
-        // Notify all players about the card played
-        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'card_name' => $card_name,
-            'card_id' => $card_id
-        ) );
-          
+        self::checkAction( 'selectTeam' );
+        $sql = "UPDATE player SET team_sel = $team_player_id WHERE player_id = $player_id";
+        self::DbQuery($sql);
+        $this->gamestate->setPlayerNonMultiactive($player_id, 'explorerSelection');
     }
-    
-    */
+
     function selectStartingExplorer($explorer_id)
     {
         self::checkAction( 'selectStartingExplorer' );
@@ -1739,6 +1747,73 @@ class BigMonster extends Table
     function st_MultiPlayerInit() {
         $this->gamestate->setAllPlayersMultiactive();
     }
+
+    function st_teamSelection()
+    {
+        if ($this->isTeamPlay()) {
+            if (self::getPlayersNumber() == 5) {
+                throw new BgaVisibleSystemExceptions(clienttranslate("Team play mode can be played at 4 or 6 players, not 5 !"));
+                $this->gamestate->nextState( 'gameEnd' );
+            } else {
+                self::NotifyAllPlayers("AskTeamSelection", '', array());
+                $this->gamestate->setAllPlayersMultiactive();
+            }
+        } else {
+            $this->gamestate->nextState( 'explorerSelection' );
+        }
+    }
+
+    function st_explorerSelection()
+    {
+        if ($this->isTeamPlay()) {
+            // check team selection and associate player on teams
+            // retrieve player choices
+            $sql = "SELECT player_id pid, team_sel ts FROM player";
+            $team_choices_raw = self::getCollectionFromDB( $sql );
+            $team_choices = array();
+            foreach ($team_choices_raw as $key => $value)
+            {
+                $team_choices[$key] = $value['ts'];
+            }
+            // $team_choices is array with player_id as key and its choice as value
+            if(count(array_unique($team_choices))<count($team_choices)){
+                // there are/is duplicate(s) to fix (multiple player has chosen the same player to team with)
+                $teams = [];
+                $not_teamed = [];
+                foreach ($team_choices as $pid => $tm) {
+                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
+                        $teams[$pid] = [$pid,$tm];
+                    } elseif ($pid != $team_choices[$tm]) {
+                        $not_teamed[] = $pid;
+                    }
+                }
+                for ($i=0; $i < count($not_teamed); $i+=2) { 
+                    $teams[$not_teamed[$i]] = [$not_teamed[$i],$not_teamed[$i+1]];
+                }
+                // teams is now the final attribution : array of key 0..1 (or 0..2 at 6 players)
+                $final_team_choices = array_values($teams);
+            } else {
+                // no duplicates
+                $teams = array();
+                foreach ($team_choices as $pid => $tm)
+                {
+                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
+                        $teams[$pid] = [$pid,$tm];
+                    }
+                }
+                $final_team_choices = array_values($teams); // reset keys to range from 0 to 1 (or 3 if 6 players mode)
+            }
+            // record to DB team association
+            foreach ($final_team_choices as $team => $players) {
+                foreach ($players as $player) {
+                    $sql = "UPDATE player SET team = $team WHERE player_id = $player";
+                    self::DbQuery( $sql );
+                }
+            }
+        }
+        $this->gamestate->setAllPlayersMultiactive();
+    }
+
 
     function st_newRound()
     {
