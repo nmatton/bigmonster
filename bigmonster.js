@@ -131,8 +131,16 @@ function (dojo, declare) {
                                 if (team != this.player_team) {
                                     console.log('placing player '+ e +' from team ' + team + ' in scroll area');
                                     let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
-                                    dojo.place(e + "_scrollmap_wrapper", "Boards", "after");
-                                    dojo.style(e+'_team_info','background-color','#'+team_color);
+                                    dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
+                                    dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
+                                    $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
+                                    // add banner on player miniboard
+                                    let tbDiv = this.format_block('jstpl_team_banner', {
+                                        color : '#'+team_color,
+                                        team_nr: toint(team) + 1
+                                    });
+                                    player_board = $('player_board_'+e)
+                                    dojo.place( tbDiv , player_board);
                                 }
     
                             });
@@ -145,11 +153,23 @@ function (dojo, declare) {
                     dojo.place(this.player_id + "_scrollmap_wrapper", "Boards", "after"); // place current player's scroll area just after Boards
                     // styling current player scroll area
                     dojo.style(this.player_id+'_team_info','background-color','#'+team_color);
+                    $(this.player_id + '_team_info').innerHTML='TEAM ' + (toint(this.player_team) + 1); // set the team name
+                    // add banner on player miniboard
+                    let tbDiv = this.format_block('jstpl_team_banner', {
+                        color : '#'+team_color,
+                        team_nr: toint(this.player_team) + 1
+                    });
+                    player_board = $('player_board_'+this.player_id)
+                    dojo.place( tbDiv , player_board);
 
                     // place other teams player's scroll areas just after current player's scroll area
                     console.log('placing player '+ teammate  +' from team ' + this.player_team + 'right after current player');
                     dojo.place(teammate + "_scrollmap_wrapper", this.player_id + "_scrollmap_wrapper", "after");
                     dojo.style(teammate+'_team_info','background-color','#'+team_color);
+                    $(teammate + '_team_info').innerHTML='TEAM ' + (toint(this.player_team) + 1); // set the team name
+                    // add banner on player miniboard
+                    player_board = $('player_board_'+teammate)
+                    dojo.place( tbDiv , player_board);
                     
                 }
                 centerscroll = true;

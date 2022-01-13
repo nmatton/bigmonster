@@ -177,6 +177,7 @@ var jstpl_helpDialog5p = `
 <div id="dialog-playerhelp"><div class="help_tile-img fiveplayers"></div></div>
 `;
 var jstpl_first_player_medal = '<div id="firstplayermedal" class="medal first_player"></div>';
+var jstpl_team_banner = '<div class="team_banner" style="background-color: ${color};">TEAM ${team_nr}</div>';
 $(function() {
     $('.bm_fitin div').css('font-size', '1em');
     

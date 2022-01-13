@@ -568,6 +568,25 @@ html {
     left: 0%;
   }
 
+/** team info **/
+
+.team_banner {
+    background-color: #ffa500;
+    border-radius: 6px;
+    border-style: ridge;
+    border: #000000 solid 3px;
+    margin: 10px;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* extra field if need to add img or other element in the team banner 
+display: flex;
+flex-direction: row;
+flex-wrap: nowrap;
+justify-content: space-between; */
+
 /** popup starting explorer **/
 
 #bm_popup {
