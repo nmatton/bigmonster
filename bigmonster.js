@@ -66,38 +66,101 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log(gamedatas);
-            // SETUP SCROLL AREAS
-            this.currentPlayer = gamedatas.currentPlayer;
+            this.isTeamPlay = gamedatas.isTeamPlay;
+            this.teams = gamedatas.teams;
+            this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
+            // **SETUP SCROLL AREAS** //
+            this.currentPlayer = this.player_id;
             this.nums_of_players = Object.keys(gamedatas.players).length;
             this.boards = [];
-            if (this.isSpectator) {
+            centerscroll = false;
+            if (!this.isTeamPlay) {
+                // individual game setup
+                console.log('create scroll areas for individual game');
+                if (this.isSpectator) {
+                    for (var t of  Object.keys(gamedatas.players)) {
+                        this.boards[t] = new Scroller(ebg.scrollmap(),t);
+                    }
+                    for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                    for (o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                        if ( Object.keys(gamedatas.players)[o] == this.currentPlayer)
+                            break
+                    }
+                } else {
+                    for (var t of gamedatas.playerorder) {
+                        this.boards[t] = new Scroller(ebg.scrollmap(),t);
+                    }
+                    for (var o = gamedatas.playerorder.length - 1; o >= 0; o--)
+                        dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
+                    for (o = gamedatas.playerorder.length - 1; o >= 0; o--) {
+                        dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
+                        if (gamedatas.playerorder[o] == this.currentPlayer)
+                            break
+                    }
+                }
+                centerscroll = true;
+            } else if (this.isTeamPlay && gamedatas.teamdefined) {
+                // team setup -- only create scroll area when teams are defined - nothing to show otherwise
+                console.log('create scroll areas for teams');
+                this.player_team = this.teams[this.currentPlayer];
                 for (var t of  Object.keys(gamedatas.players)) {
                     this.boards[t] = new Scroller(ebg.scrollmap(),t);
                 }
-                for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
-                    dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                for (o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
-                    dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                    if ( Object.keys(gamedatas.players)[o] == this.currentPlayer)
-                        break
+                if (this.isSpectator) {
+                    for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                    for (o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                        if ( Object.keys(gamedatas.players)[o] == this.currentPlayer)
+                            break
+                    }
+                } else {
+                    dojo.query('.player_info_team').style('display','block')
+                    this.teams_ordered = [];
+                     this.teams_values.forEach(element => {
+                        this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
+                    });
+                    // start by placing other teams
+                    for (const team in this.teams_ordered) {
+                        if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
+                            console.log(team);
+                            const team_members = this.teams_ordered[team];
+                            team_members.forEach(e => {
+                                if (team != this.player_team) {
+                                    console.log('placing player '+ e +' from team ' + team + ' in scroll area');
+                                    let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                                    dojo.place(e + "_scrollmap_wrapper", "Boards", "after");
+                                    dojo.style(e+'_team_info','background-color','#'+team_color);
+                                }
+    
+                            });
+                        }
+                    }
+                    // place current player scroll area
+                    console.log('placing player '+ this.player_id  +' from team ' + this.player_team + 'on first position');
+                    let team_color = this.gamedatas["players"][this.teams_ordered[this.player_team][0]]['color']
+                    let teammate = this.getOtherTeamMember(this.teams, this.player_team, this.currentPlayer)
+                    dojo.place(this.player_id + "_scrollmap_wrapper", "Boards", "after"); // place current player's scroll area just after Boards
+                    // styling current player scroll area
+                    dojo.style(this.player_id+'_team_info','background-color','#'+team_color);
+
+                    // place other teams player's scroll areas just after current player's scroll area
+                    console.log('placing player '+ teammate  +' from team ' + this.player_team + 'right after current player');
+                    dojo.place(teammate + "_scrollmap_wrapper", this.player_id + "_scrollmap_wrapper", "after");
+                    dojo.style(teammate+'_team_info','background-color','#'+team_color);
+                    
                 }
-            } else {
-                for (var t of gamedatas.playerorder) {
-                    this.boards[t] = new Scroller(ebg.scrollmap(),t);
-                }
-                for (var o = gamedatas.playerorder.length - 1; o >= 0; o--)
-                    dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
-                for (o = gamedatas.playerorder.length - 1; o >= 0; o--) {
-                    dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
-                    if (gamedatas.playerorder[o] == this.currentPlayer)
-                        break
+                centerscroll = true;
+            }
+            if (centerscroll) {
+                for (var t of Object.keys(gamedatas.players)) {
+                    if (this.boards.includes(t)) {
+                        this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                    }
                 }
             }
-            for (var t of Object.keys(gamedatas.players)) {
-                if (this.boards.includes(t)) {
-                    this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
-                }
-            }           
             // **** PLAYERS BOARDS SETUP **** //
 
             if (this.isReadOnly() && typeof g_replayFrom == 'undefined' && !g_archive_mode) {
@@ -134,7 +197,7 @@ function (dojo, declare) {
                 this.placeTile(player_id, tileNum, card_id,  x, y, rot, 0, mutation);
             }
 
-            /** SCORING BOARD SETUP **/
+            // ** SCORING BOARD SETUP ** //
 
             for( var player_id in gamedatas.players )
             {
@@ -312,7 +375,6 @@ function (dojo, declare) {
                 if (gamedatas.gamestate.name == "teamSelection") {
                     console.log('in team selection state')
                 }
-                this.isTeamPlay = gamedatas.isTeamPlay;
             }
 
             
@@ -722,8 +784,8 @@ function (dojo, declare) {
             }
         },        
 
-        ///////////////////////////////////////////////////
-        //// Utility methods
+        
+        // ** Utility methods **
         
         /*
         
@@ -732,17 +794,25 @@ function (dojo, declare) {
         
         */
 
+        getOtherTeamMember(team_array, team_value, player_id) {
+            return Object.keys(team_array).find(key => team_array[key] == team_value && key != player_id);
+        },
+
+        onlyUnique(value, index, self) {
+            return self.indexOf(value) === index;
+        },
+
         onScreenWidthChange() {
             dojo.style('page-content', 'zoom', '');
             dojo.style('page-title', 'zoom', '');
             dojo.style('right-side-first-part', 'zoom', '');
             // recentering play areras
             if (typeof this.boards !== 'undefined') {
-                if ($('MainBoardArea').offsetWidth < 650) {
+                /* if ($('MainBoardArea').offsetWidth < 650) {
                     dojo.query('.scrollerClass').style('width','90%')
                 } else {
                     dojo.query('.scrollerClass').style('width','46%')
-                }
+                } */
                 for (var t of Object.keys(this.gamedatas.players)) {
                     this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
                 }

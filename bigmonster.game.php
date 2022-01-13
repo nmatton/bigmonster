@@ -38,7 +38,8 @@ class BigMonster extends Table
                          "active_row" => 13,
                          "first_player" => 14,
                          "playmode" => 101,
-                         "hidescore" => 102) );
+                         "hidescore" => 102,
+                         "teamdefined" => 103) );
 
         $this->cards = self::getNew( "module.common.deck" );
         $this->cards->init( "card" );
@@ -83,6 +84,7 @@ class BigMonster extends Table
 
         self::setGameStateInitialValue( 'currentRound', 0 );
         self::setGameStateInitialValue( 'currentTurn', 0 );
+        self::setGameStateInitialValue( 'teamdefined', 0 ); // 0 = team not defined, 1 = team defined
         self::setGameStateInitialValue( 'game_mode', 1 ); // 1 = solo play ; 2 = team play
         self::setGameStateInitialValue( 'active_row', 0 ); // usefull for 2 and 3 players mode - active row of tile (where user can pick a card). 1 = top row; 2 = bottom row
         // Create cards
@@ -342,6 +344,8 @@ class BigMonster extends Table
         }
         $result['medals'] = $medals;
         $result['first_player'] = self::getGameStateValue( 'first_player' );
+        $result['teamdefined'] = self::getGameStateValue( 'teamdefined' );
+        $result['teams'] = $this->get_teams();
         $pile_size = (self::getPlayersNumber() == 2) ? 4 : 6;
         $result['remaining_piles'] = intval($this->cards->countCardInLocation( 'deck' )) / $pile_size;
         /*   *** HELP CONTENT FOR UI      ***
@@ -421,9 +425,7 @@ class BigMonster extends Table
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
     }
 
-//////////////////////////////////////////////////////////////////////////////
-//////////// Utility functions
-////////////    
+// ** Utility functions **
 
     /*
         In this space, you can put any utility methods useful for your game logic
@@ -434,6 +436,18 @@ class BigMonster extends Table
     {
         $sql = "UPDATE card c JOIN (SELECT card_id FROM `card` WHERE card_location = 'deck' LIMIT $n_to_move) as d ON d.card_id = c.card_id SET card_location = 'discard'";
         $this->DbQuery($sql);
+    }
+
+    function get_teams()
+    {
+        // return array of players and their team
+        $sql = "SELECT player_id pid, team t FROM player";
+        $team_raw = self::getCollectionFromDB( $sql );
+        $team = array();
+        foreach ($team_raw as $player) {
+            $team[$player['pid']] = $player['t'];
+        }
+        return $team;
     }
 
     // recursive flattening of array
@@ -1810,6 +1824,7 @@ class BigMonster extends Table
                     self::DbQuery( $sql );
                 }
             }
+            self::setGameStateValue( 'teamdefined', 1 );
         }
         $this->gamestate->setAllPlayersMultiactive();
     }

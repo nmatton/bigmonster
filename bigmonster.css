@@ -13,61 +13,6 @@
  *
  */
 
-/*
-    This is the CSS stylesheet of your game User Interface.
-    
-    Styles defined on this file will be applied to the HTML elements you define in your
-    HTML template (bigmonster_bigmonster.tpl), and to HTML elements you create dynamically
-    (in bigmonster.js).
-    
-    Usually, you are using CSS to:
-    
-    1°) define the overall layout of your game
-        (ex: place the board on the top left, place player's hand beside, place the deck on the right, ...).
-
-    2°) create your CSS-sprites:
-        All images of your games should be gathered into a small number of image files. Then, using
-        background-image and background-position CSS properties, you create HTML blocks that can 
-        display these images correctly (see example below).
-    
-    3°) ... anything else:
-        It is really easy to add and remove CSS classes dynamically from your Javascript with
-        dojo.addClass and dojo.removeClass. It is also easy to check if an element has a class
-        (dojo.hasClass) or to get all elements with a specific class (dojo.query). This is why,
-        very often, using CSS classes for the logic of your user interface allow you to do complex
-        thing easily.
-        
-        
-     Note: on the production platform, this file will be compressed and comments will be removed.
-           Consequently, don't hesitate to put as many comments as necessary.
-*/
-
-
-/* Note: you must not use any @import directive */
-
-
-/********* You can start writing your CSS below this line: **********/
-
-
-/*
-    Example of CSS sprites (a black token and a white token, 20x20px each, embedded in the same "tokens.png" 40x20px image):
-
-    .white_token {
-        background-image: url('img/tokens.png');
-        background-position: 0px 0px;
-    }
-    .black_token {
-        background-image: url('img/tokens.png');
-        background-position: -20px 0px;
-    }
-    .token {
-        width: 20px;
-        height: 20px;
-        background-repeat: none;
-    }
-*/
-/** Scrollable area **/
-
 :root {
     --body-text-color: #5c5957;
     --body-bg-color: #e2d9d5;
@@ -77,8 +22,15 @@
     --red: #e31b23;
     --offset-before: 8px;
     --offset-after: 16px;
-  }
+}
 
+html {
+    background: radial-gradient(#4d36a2, #110e13);
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+/** Scrollable area **/
 .scrollBoards {
     display: flex;
     flex-wrap: wrap;
@@ -88,13 +40,13 @@
 .scrollerClass {
 	position: relative;
 	height: 400px;
-	width: 46%;
+    width: 100%;
 	overflow: hidden;
-	margin: 10px;
 	display: inline-block;
 	border-style: solid;
-	border-color: rgba(224, 232, 255, .56);
-	background-color: rgba(224, 232, 255, .56)
+	border-color: rgb(255 255 255 / 85%);
+    border-width: 1px;
+	background-color: rgba(224, 232, 255, .56);
 }
 
 .scroller_noclick, .scroller_clickable {
@@ -136,6 +88,32 @@
     bottom: 0px;
     left: 50%;
     background-position: 32px 32px;
+}
+
+.scrollmap_wrapper{
+    width: 46%;
+    margin: 10px;
+}
+
+.scrollmap_player_info {
+    display:flex;
+    height:20px;
+    width: 46%;
+  }
+
+.player_info_name {
+    padding: 0px 10px;
+    height: 20px;
+    font-weight: bold;
+    background-color: white;
+}
+
+.player_info_team {
+    padding: 0px 9px;
+    height: 20px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
 }
 
 /** This is some extra stuff to extend the container **/
@@ -552,8 +530,8 @@
     height: 50px;
     cursor: pointer;
     opacity: 0.6;
-    border: 1px #3177f8 solid;
-    box-shadow: inset 0px 0px 10px #3177f8;
+    border: 1px #005aff solid;
+    box-shadow: inset 0px 0px 10px #005aff;
     transition: height 1s, top 1s, left 1s, opacity 1s;
   }
 
@@ -564,8 +542,8 @@
     height: 50px;
     cursor: pointer;
     opacity: 0.6;
-    border: 1px #3177f8 solid;
-    box-shadow: inset 0px 0px 10px #3177f8;
+    border: 1px #005aff solid;
+    box-shadow: inset 0px 0px 10px #005aff;
     transition: width 1s, top 1s, left 1s, opacity 1s;
 }
 
