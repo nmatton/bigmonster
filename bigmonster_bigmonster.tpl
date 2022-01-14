@@ -106,8 +106,8 @@
    <!-- BEGIN ScrollerBlock -->
    <div id="{PLAYER_ID}_scrollmap_wrapper" class='scrollmap_wrapper' id='...'>
     <div class='scrollmap_player_info'>
-      <div class='player_info_name' style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
-      <div id="{PLAYER_ID}_team_info" class='player_info_team' style="background-color:#AAAAA; display:none">TEAM 0</div>
+      <div class='player_info_name tab' style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
+      <div id="{PLAYER_ID}_team_info" class='player_info_team tab' style="background-color:#AAAAA; display:none">TEAM 0</div>
     </div>
     <div id="{PLAYER_ID}_scrollmap" class="scrollerClass">
       <div id="{PLAYER_ID}_scrollmap_noclick" class="scroller_noclick"> </div>

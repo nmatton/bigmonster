@@ -79,7 +79,7 @@ function (dojo, declare) {
                 console.log('create scroll areas for individual game');
                 if (this.isSpectator) {
                     for (var t of  Object.keys(gamedatas.players)) {
-                        this.boards[t] = new Scroller(ebg.scrollmap(),t);
+                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
                     }
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
                         dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
@@ -90,7 +90,7 @@ function (dojo, declare) {
                     }
                 } else {
                     for (var t of gamedatas.playerorder) {
-                        this.boards[t] = new Scroller(ebg.scrollmap(),t);
+                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
                     }
                     for (var o = gamedatas.playerorder.length - 1; o >= 0; o--)
                         dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
@@ -106,7 +106,7 @@ function (dojo, declare) {
                 console.log('create scroll areas for teams');
                 this.player_team = this.teams[this.currentPlayer];
                 for (var t of  Object.keys(gamedatas.players)) {
-                    this.boards[t] = new Scroller(ebg.scrollmap(),t);
+                    this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
                 }
                 if (this.isSpectator) {
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
@@ -133,6 +133,9 @@ function (dojo, declare) {
                                     let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
                                     dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
                                     dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
+                                    styleElem = $(e + '_team_info').appendChild(document.createElement('style'))
+                                    styleElem.innerHTML = ".player_info_team:after {border-color : transparent transparent transparent #"+team_color+";}";
+                                    console.log(".player_info_team:after {border-color : transparent transparent transparent #"+team_color+";}")
                                     $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
                                     // add banner on player miniboard
                                     let tbDiv = this.format_block('jstpl_team_banner', {

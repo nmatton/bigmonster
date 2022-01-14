@@ -90,16 +90,25 @@ html {
     background-position: 32px 32px;
 }
 
-.scrollmap_wrapper{
+ .scrollmap_wrapper{
     width: 46%;
     margin: 10px;
 }
 
-.scrollmap_player_info {
+/* .scrollmap_player_info {
     display:flex;
     height:20px;
     width: 46%;
-  }
+} */
+.scrollmap_player_info{
+margin: 0;
+list-style-type : none;
+line-height : 35px;
+max-height: 35px;
+overflow: hidden;
+display: inline-block;
+padding-right: 20px
+}
 
 .player_info_name {
     padding: 0px 10px;
@@ -108,12 +117,64 @@ html {
     background-color: white;
 }
 
+.tab {
+    padding: 0px 10px;
+    height: 20px;
+    font-weight: bold;
+    background-color: white;
+    float : left;
+    margin : 5px -5px 0;
+    border-top-right-radius: 25px 170px;
+    border-top-left-radius: 20px 90px;
+    padding : 0 30px 0 25px;
+    height: 170px;
+    background: #ddd;
+    position : relative;
+    box-shadow: 0 10px 20px rgba(0,0,0,.5);
+    max-width : 200px;
+}
+
+.tab:before, .tab:after{
+    content : '';
+    background : transparent;
+    height: 20px;
+    width: 20px;
+    border-radius: 100%;
+    border-width: 10px;
+    top: 0px;
+    border-style : solid;
+    position : absolute;
+  }
+
+  .tab:before{
+    border-color : transparent #ddd transparent transparent;
+    -webkit-transform : rotate(48deg);
+    left: -23px;
+  }
+  
+  .tab:after{
+    border-color : transparent transparent transparent #ddd;
+    -webkit-transform : rotate(-48deg);
+    right: -16px;
+  }
+
+  
+  
+
 .player_info_team {
-    padding: 0px 9px;
+    padding: 0px 25px 10px;
     height: 20px;
     color: white;
     font-size: 14px;
     font-weight: bold;
+    width: 50px;
+    z-index: -1;
+    margin-left: -25px;
+    border-top-right-radius: 30px 70px;
+}
+
+.player_info_team:after{
+    border-color : transparent transparent transparent transparent;
 }
 
 /** This is some extra stuff to extend the container **/
