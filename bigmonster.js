@@ -133,9 +133,6 @@ function (dojo, declare) {
                                     let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
                                     dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
                                     dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
-                                    styleElem = $(e + '_team_info').appendChild(document.createElement('style'))
-                                    styleElem.innerHTML = ".player_info_team:after {border-color : transparent transparent transparent #"+team_color+";}";
-                                    console.log(".player_info_team:after {border-color : transparent transparent transparent #"+team_color+";}")
                                     $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
                                     // add banner on player miniboard
                                     let tbDiv = this.format_block('jstpl_team_banner', {
@@ -268,7 +265,7 @@ function (dojo, declare) {
                     // remove pile card count (the rem cards is visible in hand)
                     dojo.destroy('card_left_count');
                     // remove "gridded" class
-                    dojo.query('#myhand_wrap').removeClass('bm_gridded')
+                    dojo.query('#myhand_area').removeClass('bm_gridded')
                     // ADD A COUNTER OF ROUND : TODO !
                     this.playerHand = new ebg.stock(); // new stock object for hand
                     this.playerHand.create( this, $('myhand'), this.tiledwidth, this.tileheight );
@@ -462,9 +459,11 @@ function (dojo, declare) {
             // ** HELP AND OPTION ** //
 
             if (this.isSpectator) {
+                dojo.place(jstmp_medal_face_select, document.querySelector('.player-board.spectator-mode'));
                 dojo.place(jstpl_helpIcon, document.querySelector('.player-board.spectator-mode'));
                 dojo.query('.player-board.spectator-mode .roundedbox_main').style('display', 'none');
             } else {
+                dojo.place(jstmp_medal_face_select, 'ma_' + this.player_id);
                 dojo.place(jstpl_helpIcon, 'ma_' + this.player_id);
 
             }

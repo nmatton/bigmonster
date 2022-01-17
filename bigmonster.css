@@ -107,7 +107,8 @@ line-height : 35px;
 max-height: 35px;
 overflow: hidden;
 display: inline-block;
-padding-right: 20px
+padding-right: 20px;
+padding-left: 4px;
 }
 
 .player_info_name {
@@ -158,8 +159,6 @@ padding-right: 20px
     right: -16px;
   }
 
-  
-  
 
 .player_info_team {
     padding: 0px 25px 10px;
@@ -286,7 +285,7 @@ padding-right: 20px
     background-size: 300% auto;
 }
 
-/* Tile on stock element */
+/** Tile on stock element **/
 
 .bm_tileArea {
     border-radius: 15px;
@@ -319,8 +318,7 @@ padding-right: 20px
 }
 
 
-/* CARD STYLES
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
+/** CARD STYLES **/
 .card {
     position: relative;
     margin: 60px auto;
@@ -385,9 +383,45 @@ padding-right: 20px
     transform: translate(calc(-1 * var(--offset-before)), 0);
   }
   
+/** hand/medal area **/
 
+.handmedal_area{
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+}
 
-/* Medals */
+  /** Hand **/
+
+  .hand_wrapper{
+    min-width: 60%;
+    max-width: 710px;
+  }
+
+#myhand_area{
+    border: white solid 1px;
+    margin: 5px;
+        margin-top: 0px;
+    max-width: 700px;
+    min-height: 140px;
+    padding-bottom: 0px;
+    padding-top: 5px;
+}
+
+#myhand{
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+/** Medals **/
+
+#medals_area{
+    border: white solid 1px;
+    margin: 5px;
+        margin-top: 0px;
+        margin-bottom: 0px;
+    min-height: 130px;
+}
+
 .medal_area {
     display: flex;
     margin: 5px;
@@ -442,6 +476,7 @@ padding-right: 20px
     display: flex;
     margin: 5px;
     perspective: 1000px;
+    flex-wrap: wrap;
 }
 
 .medal_stock .medal_area_inner {
@@ -583,7 +618,7 @@ padding-right: 20px
 }
 
 
-/* possible move on the board*/
+/** possible move on the board**/
 
 .possibleMoveV {
     position: absolute;

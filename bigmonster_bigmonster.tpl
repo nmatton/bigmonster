@@ -93,14 +93,29 @@
     <div id="ship_{PLAYER_ID}" class="bm_fitin" style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
     <!-- END ShipBlock -->
 </div>
-
-<div id="myhand_wrap" class="whiteblock bm_gridded">
-    <h3 id='bm_title_myhand'>{TITLE_MY_HAND}</h3>
-    <h3 id='bm_title_board' >{TITLE_BOARD}</h3>
-    <div id="myhand" class="whiteblock bm_tileArea">
+<div class="handmedal_area">
+  <div class="medal_wrapper">
+    <div class="scrollmap_player_info" style="padding-left: 15px;">
+      <div class="player_info_name tab">{MEDALS}</div>
     </div>
-  <div id='card_left_count' class="card card-top-left"><div id="card_counter" class="card-inner bm_tileClass backtile"></div></div>
+    <div id="medals_area" class="whiteblock">
+      <div id="medals" class="medal_stock"></div>
+    </div>
+  </div>
+  <div class="hand_wrapper">
+    <div class="scrollmap_player_info" style="padding-left: 15px;">
+      <div id='bm_title_myhand' class="player_info_name tab">{TITLE_MY_HAND}</div>
+      <div id='bm_title_board' class="player_info_name tab">{TITLE_BOARD}</div>
+    </div>
+    <div id="myhand_area" class="whiteblock bm_gridded">
+        <div id="myhand" class="whiteblock bm_tileArea">
+        </div>
+      <div id='card_left_count' class="card card-top-left"><div id="card_counter" class="card-inner bm_tileClass backtile"></div></div>
+    </div>
+  </div>
 </div>
+
+
 <div id="MainBoardArea" class="scrollBoards">
 <div id="Boards">
    <!-- BEGIN ScrollerBlock -->
@@ -125,20 +140,7 @@
 </div>
 
 
-<div id="medals_wrap" class="whiteblock">
-  <h3>{MEDALS}</h3>
-  <div id="face_select" class="bm_faceSelector">
-    <i class="fa fa-qq"></i><label class="bm_switch">
-      <input type="checkbox">
-      <span class="bm_slider round"></span>
-      </label>
-      <span class="fa-stack">
-        <i id="circl_pts" class="fa fa-circle-o fa-stack-2x"></i><strong class="fa-stack-1x">?</strong>
-      </span>
-    <!-- <i class="fa fa-dollar"></i> -->
-  </div>
-  <div id="medals" class="medal_stock"></div>
-</div>
+
 
 <script type="text/javascript">
 
@@ -168,6 +170,17 @@ var jstpl_helpIcon = `
     <path class="fa-primary" fill="currentColor" d="M224 338a46 46 0 1 0 46 46 46.05 46.05 0 0 0-46-46zm6.66-248c-54.5 0-89.26 23-116.55 63.76a12 12 0 0 0 2.71 16.24l34.7 26.31a12 12 0 0 0 16.67-2.13c17.86-22.66 30.11-35.79 57.3-35.79 20.43 0 45.7 13.14 45.7 33 0 15-12.37 22.67-32.54 34C215.13 238.53 184 254.94 184 296v4a12 12 0 0 0 12 12h56a12 12 0 0 0 12-12v-1.33c0-28.46 83.19-29.67 83.19-106.67 0-58-60.19-102-116.53-102z"></path>
   </g>
 </svg>
+</div>
+`;
+var jstmp_medal_face_select = `
+<div id="face_select" class="bm_faceSelector">
+  <i class="fa fa-qq"></i><label class="bm_switch">
+    <input type="checkbox">
+    <span class="bm_slider round"></span>
+    </label>
+    <span class="fa-stack">
+      <i id="circl_pts" class="fa fa-circle-o fa-stack-2x"></i><strong class="fa-stack-1x">?</strong>
+    </span>
 </div>
 `;
 var jstpl_helpDialog = `
