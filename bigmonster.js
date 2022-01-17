@@ -69,6 +69,7 @@ function (dojo, declare) {
             this.isTeamPlay = gamedatas.isTeamPlay;
             this.teams = gamedatas.teams;
             this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
+            this.team_defined = toint(gamedatas.teamdefined);
             // **SETUP SCROLL AREAS** //
             this.currentPlayer = this.player_id;
             this.nums_of_players = Object.keys(gamedatas.players).length;
@@ -101,13 +102,17 @@ function (dojo, declare) {
                     }
                 }
                 centerscroll = true;
-            } else if (this.isTeamPlay && gamedatas.teamdefined) {
+            } else if (this.isTeamPlay && this.team_defined) {
                 // team setup -- only create scroll area when teams are defined - nothing to show otherwise
                 console.log('create scroll areas for teams');
                 this.player_team = this.teams[this.currentPlayer];
                 for (var t of  Object.keys(gamedatas.players)) {
                     this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
                 }
+                this.teams_ordered = [];
+                 this.teams_values.forEach(element => {
+                    this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
+                });
                 if (this.isSpectator) {
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
                         dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
@@ -118,10 +123,6 @@ function (dojo, declare) {
                     }
                 } else {
                     dojo.query('.player_info_team').style('display','block')
-                    this.teams_ordered = [];
-                     this.teams_values.forEach(element => {
-                        this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
-                    });
                     // start by placing other teams
                     for (const team in this.teams_ordered) {
                         if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
@@ -218,44 +219,109 @@ function (dojo, declare) {
             }
 
             // ** SCORING BOARD SETUP ** //
+            if (this.isTeamPlay && this.team_defined) {
+                // setup score board for teams
+                this.teams_ordered = [];
+                 this.teams_values.forEach(element => {
+                    this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
+                });
+                // insert team names row (just under the names)
+                var table = document.getElementById("scoretable");
+                var row = table.insertRow(1);
+                row.setAttribute('id','team-title');
+                row.setAttribute('class','line-below');
+                var cell = row.insertCell(-1);
+                cell.setAttribute('class','first-column');
+                cell.innerHTML='TEAMS';
+                for (var team in this.teams_ordered) {
+                    var teamno = 1;
+                    for (var pid in this.teams_ordered[team]) {
+                        player_id = this.teams_ordered[team][pid];
+                        var player = gamedatas.players[player_id];
+                        let splitPlayerName = '';
+                        let chars = player.name.split("");
+                        for (let i in chars) {
+                        splitPlayerName += `<span>${chars[i]}</span>`;
+                        }
+                        if (teamno == 2 && team != this.teams_ordered.length-1) {
+                            $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" class="teamsplit" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+                        
+                            $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}" class="teamsplit"></td>`;
+                            $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}" class="teamsplit"></td>`;
 
-            for( var player_id in gamedatas.players )
-            {
-                var player = gamedatas.players[player_id];
-                // Set up scoring table in advance (helpful for testing!)
-                let splitPlayerName = '';
-                let chars = player.name.split("");
-                for (let i in chars) {
-                   splitPlayerName += `<span>${chars[i]}</span>`;
+                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id} class='teamsplit'"></td>`;
+                        } else {
+
+                            $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+                            
+                            $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}"></td>`;
+                            $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}"></td>`;
+                            $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}"></td>`;
+                            $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}"></td>`;
+                            $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}"></td>`;
+                            $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}"></td>`;
+                            $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}"></td>`;
+                            $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}"></td>`;
+
+                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}"></td>`;
+                        }
+                        teamno += 1;
+                    }
+                    $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}" class='teamsplit'></td>`;
+                    let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                    let tbDiv = this.format_block('jstpl_team_banner', {
+                        color : '#'+team_color,
+                        team_nr: toint(team) + 1
+                    });
+                    var cell = row.insertCell();
+                    cell.setAttribute('colspan',"2");
+                    cell.innerHTML = tbDiv;
                 }
-                $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+            } else if (!this.isTeamPlay) {
+                // setup score board for indivudual play
+                for( var player_id in gamedatas.players )
+                {
+                    var player = gamedatas.players[player_id];
+                    // Set up scoring table in advance (helpful for testing!)
+                    let splitPlayerName = '';
+                    let chars = player.name.split("");
+                    for (let i in chars) {
+                    splitPlayerName += `<span>${chars[i]}</span>`;
+                    }
+                    $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+                    
+                    $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}"></td>`;
+                    $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}"></td>`;
+                    $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}"></td>`;
+                    $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}"></td>`;
+                    $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}"></td>`;
+                    $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}"></td>`;
+                    $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}"></td>`;
+                    $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}"></td>`;
+                    
+                    $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}"></td>`;
+                }
+
+                // Add an extra column at the end, just for padding reasons
+                $('scoring-row-players').innerHTML += `<td></td>`;
                 
-                $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}"></td>`;
-                $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}"></td>`;
-                $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}"></td>`;
-                $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}"></td>`;
-                $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}"></td>`;
-                $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}"></td>`;
-                $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}"></td>`;
-                $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}"></td>`;
+                $('scoring-row-ice').innerHTML += `<td></td>`;
+                $('scoring-row-bigmonster').innerHTML += `<td></td>`;
+                $('scoring-row-lava').innerHTML += `<td></td>`;
+                $('scoring-row-grassland').innerHTML += `<td></td>`;
+                $('scoring-row-swamp').innerHTML += `<td></td>`;
+                $('scoring-row-diamonds').innerHTML += `<td></td>`;
+                $('scoring-row-explorer').innerHTML += `<td></td>`;
+                $('scoring-row-medal').innerHTML += `<td></td>`;
                 
-                $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}"></td>`;
+                $('scoring-row-total').innerHTML += `<td></td>`;
             }
-
-            // Add an extra column at the end, just for padding reasons
-            $('scoring-row-players').innerHTML += `<td></td>`;
-             
-            $('scoring-row-ice').innerHTML += `<td></td>`;
-            $('scoring-row-bigmonster').innerHTML += `<td></td>`;
-            $('scoring-row-lava').innerHTML += `<td></td>`;
-            $('scoring-row-grassland').innerHTML += `<td></td>`;
-            $('scoring-row-swamp').innerHTML += `<td></td>`;
-            $('scoring-row-diamonds').innerHTML += `<td></td>`;
-            $('scoring-row-explorer').innerHTML += `<td></td>`;
-            $('scoring-row-medal').innerHTML += `<td></td>`;
-            
-            $('scoring-row-total').innerHTML += `<td></td>`;
-
             // **** TILES AND HAND MANAGEMENT **** //
             if (!this.isSpectator) {
                 // ** Create hands of tiles ** //
@@ -546,7 +612,7 @@ function (dojo, declare) {
                             popupcontent += '<p id="exploInfo"> ' + explo_info + '</p></div>'
                         }
                         popupcontent += '</div><button id="conf_expl_btn" class="bm_accept-pending">Confirm selection</button></div>'
-                        dojo.place(popupcontent, "myhand_wrap", "before");
+                        dojo.place(popupcontent, "ships", "before");
                         for (var i = 0; i < explorers.length; i++) {
                             var explo_id = explorers[i]['explorer_id'];
                             dojo.query("#tile_" + explo_id).connect("onclick", this, "onClickStartTile")

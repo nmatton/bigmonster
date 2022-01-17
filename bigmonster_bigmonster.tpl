@@ -24,11 +24,12 @@
     
     Please REMOVE this comment before publishing your game on BGA
 -->
-
-<div id="game-scoring">
-  <table>
+<div id='stars1' class="stars"></div>
+<div id='stars2' class="stars"></div>
+<div id="game-scoring" class="whiteblock">
+  <table id='scoretable'>
     <tr id="scoring-row-players" class="line-below">
-      <td class="first-column"></td>
+      <td class="first-column"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-alt" width="50px" height="50px" class="svg-inline--fa fa-user-alt fa-w-16" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 288c79.5 0 144-64.5 144-144S335.5 0 256 0 112 64.5 112 144s64.5 144 144 144zm128 32h-55.1c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16H128C57.3 320 0 377.3 0 448v16c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48v-16c0-70.7-57.3-128-128-128z"></path></svg></td>
     </tr>
     <tr id="scoring-row-ice" class="line-below">
       <td class="first-column"><span class="arrow">→</span><i id="scoring-ice-icon" class="icon icon-ice"></i></td>
@@ -84,6 +85,9 @@
                    200.57,59.25 208.05,66.72 217.29,66.72
                    217.29,66.72 217.29,66.72 217.29,66.72 Z"></path>
       </svg></td>
+    </tr>
+    <tr id="scoring-row-teamtotal" class="line-below">
+      <td id="text-team" class="first-column"><span class="arrow">→</span><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-friends" class="svg-inline--fa fa-user-friends fa-w-20" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="50px" height="50px"><path fill="currentColor" d="M192 256c61.9 0 112-50.1 112-112S253.9 32 192 32 80 82.1 80 144s50.1 112 112 112zm76.8 32h-8.3c-20.8 10-43.9 16-68.5 16s-47.6-6-68.5-16h-8.3C51.6 288 0 339.6 0 403.2V432c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48v-28.8c0-63.6-51.6-115.2-115.2-115.2zM480 256c53 0 96-43 96-96s-43-96-96-96-96 43-96 96 43 96 96 96zm48 32h-3.8c-13.9 4.8-28.6 8-44.2 8s-30.3-3.2-44.2-8H432c-20.4 0-39.2 5.9-55.7 15.4 24.4 26.3 39.7 61.2 39.7 99.8v38.4c0 2.2-.5 4.3-.6 6.4H592c26.5 0 48-21.5 48-48 0-61.9-50.1-112-112-112z"></path></svg></td>
     </tr>
   </table>
 </div>
