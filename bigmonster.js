@@ -70,6 +70,7 @@ function (dojo, declare) {
             this.teams = gamedatas.teams;
             this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
             this.team_defined = toint(gamedatas.teamdefined);
+            this.team_ui_setup = false;
             // **SETUP SCROLL AREAS** //
             this.currentPlayer = this.player_id;
             this.nums_of_players = Object.keys(gamedatas.players).length;
@@ -103,8 +104,8 @@ function (dojo, declare) {
                 }
                 centerscroll = true;
             } else if (this.isTeamPlay && this.team_defined) {
+                this.team_ui_setup = true;
                 // team setup -- only create scroll area when teams are defined - nothing to show otherwise
-                console.log('create scroll areas for teams');
                 this.player_team = this.teams[this.currentPlayer];
                 for (var t of  Object.keys(gamedatas.players)) {
                     this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
@@ -225,6 +226,8 @@ function (dojo, declare) {
                  this.teams_values.forEach(element => {
                     this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
                 });
+                // add line below on indiv score row
+                dojo.query('#scoring-row-total').addClass('line-below')
                 // insert team names row (just under the names)
                 var table = document.getElementById("scoretable");
                 var row = table.insertRow(1);
@@ -255,7 +258,7 @@ function (dojo, declare) {
                             $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}" class="teamsplit"></td>`;
                             $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}" class="teamsplit"></td>`;
 
-                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id} class='teamsplit'"></td>`;
+                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}" class='teamsplit'></td>`;
                         } else {
 
                             $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
@@ -273,7 +276,12 @@ function (dojo, declare) {
                         }
                         teamno += 1;
                     }
-                    $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}" class='teamsplit'></td>`;
+                    if (team != this.teams_ordered.length-1) {
+                        $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}" class='teamsplit'></td>`;
+                    } else {
+                        $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}"></td>`;
+
+                    }
                     let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
                     let tbDiv = this.format_block('jstpl_team_banner', {
                         color : '#'+team_color,
@@ -902,7 +910,7 @@ function (dojo, declare) {
                     dojo.query('.scrollerClass').style('width','46%')
                 } */
                 for (var t of Object.keys(this.gamedatas.players)) {
-                    this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                    if(this.boards.length > 0) this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
                 }
             }
         },
@@ -1743,20 +1751,24 @@ function (dojo, declare) {
          },
          
          setScoringRowText: function(stage, player_id, value) {
-              $('scoring-row-' + stage + '-p' + player_id).innerHTML = value;
+             if (stage =='team') {
+                    $('scoring-row-' + stage + '-t' + player_id).innerHTML = value;
+            } else {
+                    $('scoring-row-' + stage + '-p' + player_id).innerHTML = value;
+             }
            },
        
-          setScoringRowWinner: function(winner_ids) {
-             for (let i in winner_ids) {
-                let player_id = winner_ids[i];
-                dojo.addClass($('scoring-row-name-p' + player_id), 'wavetext');
-                
-                let stages = ['ice', 'bigmonster', 'lava', 'grassland', 'swamp', 'diamonds', 'explorer', 'medal', 'total'];
-                for (let j in stages) {
-                   let stage = stages[j];
-                   dojo.style($('scoring-row-'+stage+'-p' + player_id), {'backgroundColor': 'rgba(255, 215, 0, 0.3)'});
-                }
-             }
+          setScoringRowWinner: function(player_id, teamid=0) {
+            dojo.addClass($('scoring-row-name-p' + player_id), 'wavetext');
+            
+            let stages = ['ice', 'bigmonster', 'lava', 'grassland', 'swamp', 'diamonds', 'explorer', 'medal', 'total'];
+            for (let j in stages) {
+                let stage = stages[j];
+                dojo.style($('scoring-row-'+stage+'-p' + player_id), {'backgroundColor': 'rgba(255, 215, 0, 0.3)'});
+            }
+            if (this.isTeamPlay) {
+                dojo.style($('scoring-row-team-t' + teamid), {'backgroundColor': 'rgba(255, 215, 0, 0.3)'});
+            }
            },
          
          notif_finalRound: function( notif ) {
@@ -1770,9 +1782,14 @@ function (dojo, declare) {
          {
             let breakdowns = notif.args.breakdowns;
             let winnerIds = [toint(notif.args.winner_ids)];
+            if (this.isTeamPlay) {
+                teamscores = notif.args.team_scores;
+                teamwinId = notif.args.winning_team;
+            }
+            
             // show the final scoring table
             dojo.style($('game-scoring'), {'display': 'block'});
-            dojo.style($('myhand_wrap'), {'display': 'none'})
+            dojo.style($('handmedal_area'), {'display': 'none'})
             if ($('ships')) {
                 dojo.style($('ships'), {'display': 'none'})
             }
@@ -1780,32 +1797,51 @@ function (dojo, declare) {
             let stages = ['ice', 'bigmonster', 'lava', 'grassland', 'swamp', 'diamonds', 'explorer', 'medal', 'total'];
             let currentTime = 0;
             for (let i in stages) {
-               let stage = stages[i];
-               let breakdownStage = stage;
-               if (stage == 'total') {
+                let stage = stages[i];
+                let breakdownStage = stage;
+                if (stage == 'total') {
                     breakdownStage = 'score';
-               } else if (stage == 'diamonds') {
+                } else if (stage == 'diamonds') {
                     breakdownStage = 'diams';
-               } else if (stage == 'explorer') {
+                } else if (stage == 'explorer') {
                     breakdownStage = 'explo';
-               } else if (stage == 'medal') {
+                } else if (stage == 'medal') {
                     breakdownStage = 'medals';
-               }
-               // Set arrow to here
-               setTimeout(this.setScoringArrowRow.bind(this, stage), currentTime);
-               for( let player_id in this.gamedatas.players ) {
-                  // timer version
-                  setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
-                  this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
-                  currentTime += 500;
-               }
+                }
+                // Set arrow to here
+                let player_list = this.teams_ordered.flat()
+                setTimeout(this.setScoringArrowRow.bind(this, stage), currentTime);
+                for( let i in player_list ) {
+                    player_id = player_list[i];
+                    // timer version
+                    setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
+                    this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
+                    currentTime += 500;
+                }
+            }
+            if (this.isTeamPlay) {
+                for (let teamid in this.teams_values) {
+                    console.log(teamid, teamscores[teamid])
+                    setTimeout(this.setScoringRowText.bind(this, 'team', teamid, teamscores[teamid]), currentTime);
+                    this.setScoringRowText.bind('team', teamid, teamscores[teamid]);
+                    currentTime += 500;
+                }
             }
             
             // Set winner to be animated!
             currentTime -= 250;
-            // timer version
-            setTimeout(this.setScoringRowWinner.bind(this, winnerIds), currentTime);
-            //this.setScoringRowWinner(winnerIds);
+            if (this.isTeamPlay) {
+                for (let i in teamwinId) {
+                    teamid = teamwinId[i];
+                    for (let j in this.teams_ordered[teamid]) {
+                        player_id = this.teams_ordered[teamid][j];
+                        console.log(player_id)
+                        setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),teamid), currentTime);
+                    }
+                }
+            } else {
+                setTimeout(this.setScoringRowWinner.bind(this, winnerIds), currentTime);
+            }
          },
 
         notif_selectedExplorers : function (notif)

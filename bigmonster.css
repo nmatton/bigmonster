@@ -37,6 +37,10 @@ html {
     justify-content: center;
 }
 
+#Boards{
+    display:none;
+}
+
 .scrollerClass {
 	position: relative;
 	height: 400px;
@@ -1133,16 +1137,16 @@ background-size: 1180%;
   }
   
   .stars {
-    background:transparent url(https://studio.boardgamearena.com:8084/data/themereleases/current/games/bigmonster/999999-9999/img/stars.png) repeat top center;
+    background:transparent url(img/stars.png) repeat top center;
     z-index:-5;
   }
   
   #stars1 {
-    animation:space 180s ease-in-out infinite;
+    animation:space 2600s linear infinite;
   }
   
   #stars2 {
-    animation:space2 180s ease-in-out infinite;
+    animation:space2 2600s linear infinite;
     transform: rotate(90deg);
   }
   

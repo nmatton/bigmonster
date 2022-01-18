@@ -431,12 +431,47 @@ class BigMonster extends Table
         In this space, you can put any utility methods useful for your game logic
     */
 
-    // move some cards to discard --- FOR TESTING PURPOSE
+    // ! TESTING AND DEBUG FUNCTIONS ! //
+
+    // ! move some cards from deck to discard (in 2/3p variant, to get faster to end of phase 1 or 2) -> should be a multiple of dealed cards (4 in 2p mode or 6 in 3p mode) --- 
     public function movetodiscard($n_to_move)
     {
         $sql = "UPDATE card c JOIN (SELECT card_id FROM `card` WHERE card_location = 'deck' LIMIT $n_to_move) as d ON d.card_id = c.card_id SET card_location = 'discard'";
         $this->DbQuery($sql);
     }
+
+    // ! run the team scoring notif ---
+    public function sendTeamScoreNotif()
+    {
+        $breakdowns = array();
+        foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+            // Compute score with details
+            $score = $this->computeScore($player_id, true);
+            // append to breakdowns
+            $breakdowns[$player_id] = $score;
+            // get diamonds counts
+        }
+
+        // TODO : In theory there can be multiple...
+        $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
+        // compute team score if teamode is enabled
+        if ($this->isTeamPlay()) {
+            $team_scores = $this->computeTeamScore($breakdowns);
+            $winning_team = array_values(array_keys($team_scores,max($team_scores)));
+        } else {
+            $team_scores = array();
+            $winning_team = array();
+        }
+        $notif_data = array(
+            "breakdowns" => $breakdowns,
+            "winner_ids" => $winner_id,
+            "team_scores" => $team_scores,
+            "winning_team" => $winning_team
+        );
+        // send notif of end scores
+        self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
+    }
+
 
     function get_teams()
     {
@@ -1365,6 +1400,24 @@ class BigMonster extends Table
         return $score;
     }
 
+    protected function computeTeamScore($breakdowns)
+    {
+        # Compute team score based on indivuduals scores
+        $team_score = array();
+        $teams = $this->get_teams();
+        foreach ($teams as $player_id => $team_id) {
+            if (array_key_exists($team_id, $team_score)) {
+                if ($team_score[$team_id] > $breakdowns[$player_id]['score']) {
+                    $team_score[$team_id] = $breakdowns[$player_id]['score'];
+                }
+            }
+            else {
+                $team_score[$team_id] = $breakdowns[$player_id]['score'];
+            }
+        }
+        return $team_score;
+    }
+
     protected function getStatList()
     {
         return array(
@@ -2147,7 +2200,7 @@ class BigMonster extends Table
                     "pts" => $this->medals_infos[7]['pts'],
                     "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']]
                 );
-                self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the  "${medal_name}" medal (${pts} points)!'), $notif_data);
+                self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the "${medal_name}" medal (${pts} points)!'), $notif_data);
             }
         } else {
             $player_id = $lowest_player[0];
@@ -2210,11 +2263,21 @@ class BigMonster extends Table
         // TODO : In theory there can be multiple...
         $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
 
-        // send notif of end scores
+        // compute team score if teamode is enabled
+        if ($this->isTeamPlay()) {
+            $team_scores = $this->computeTeamScore($breakdowns);
+            $winning_team = array_keys($team_scores,max($team_scores));
+        } else {
+            $team_scores = array();
+            $winning_team = array();
+        }
         $notif_data = array(
             "breakdowns" => $breakdowns,
-            "winner_ids" => $winner_id
+            "winner_ids" => $winner_id,
+            "team_scores" => $team_scores,
+            "winning_team" => $winning_team
         );
+        // send notif of end scores
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
         $this->gamestate->nextState( 'gameEnd' );
 
