@@ -42,6 +42,7 @@ class BigMonster extends Table
 
         $this->cards = self::getNew( "module.common.deck" );
         $this->cards->init( "card" );
+        $this->initLocalDB();
 	}
 	
     protected function getGameName( )
@@ -317,13 +318,13 @@ class BigMonster extends Table
         $result['players'] = self::getCollectionFromDb( $sql );
         
         // Variables valid for 4+ games
-        $result['hand'] = $this->cards->getCardsInLocation( 'hand', $current_player_id );
+        $result['hand'] = $this->custgetCardsInLocation( 'hand', $current_player_id );
         $result['cardsOnShips'] = $this->cards->countCardsByLocationArgs( 'onShip' );
 
         // Variables valid for 2 and 3 games
-        $result['tiles_upper_row'] = $this->cards->getCardsInLocation( 'hand', 1 );
-        $result['tiles_lower_row'] = $this->cards->getCardsInLocation( 'hand', 2 );
-        $result['tilesonrows'] = $this->cards->getCardsInLocation( 'hand');
+        $result['tiles_upper_row'] = $this->custgetCardsInLocation( 'hand', 1 );
+        $result['tiles_lower_row'] = $this->custgetCardsInLocation( 'hand', 2 );
+        $result['tilesonrows'] = $this->custgetCardsInLocation( 'hand');
 
         $result['active_row'] = self::getGameStateValue( 'active_row' );
 
@@ -356,7 +357,7 @@ class BigMonster extends Table
         $result['teamdefined'] = self::getGameStateValue( 'teamdefined' );
         $result['teams'] = $this->get_teams();
         $pile_size = (self::getPlayersNumber() == 2) ? 4 : 6;
-        $result['remaining_piles'] = intval($this->cards->countCardInLocation( 'deck' )) / $pile_size;
+        $result['remaining_piles'] = intval($this->custcountCardInLocation( 'deck' )) / $pile_size;
         /*   *** HELP CONTENT FOR UI      ***
         */
         $result['help_monsters'] = $this->monster_infos;
@@ -432,26 +433,181 @@ class BigMonster extends Table
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
     }
 
+    public function test_sql($card_id)
+    {
+        $sql = "SELECT mutation FROM card WHERE card_id = $card_id";
+        print_r(self::getCollectionFromDb( $sql ));
+    }
+
+    public function test_sqlupdate($player_id)
+    {
+        $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id)));
+        print_r($ids);  
+    }
+
+    public function test()
+    {
+        // double mutagen
+        //$this->check_mutation(array(2,2), array('card_type_arg'=>1),2356488);
+        // simple mutagen
+        $res=$this->cards->countCardsByLocationArgs( 7 );
+        print_r($res);
+        $res2 = $this->custcountCardsByLocationArgs(7);
+        print_r($res2);
+
+    }
+
     // ! ------ end of testing and debug functions /////
 
+    // LOCAL DB INITIALIZATION
+
+    
+    public function initLocalDB()
+    {
+        $sql = 'SELECT * FROM player';
+        $this->dbplayer = self::getCollectionFromDb($sql);
+        $sql = 'SELECT * FROM explorers';
+        $this->dbexplorers = self::getCollectionFromDb($sql);
+        $sql = 'SELECT * FROM card';
+        $this->dbcard = self::getCollectionFromDb($sql);
+    }
+
+      /**
+   * Multi-array search
+   *
+   * @param array $array
+   * @param array $search
+   * @return array
+   */
+    protected function multi_array_search($array, $search)
+    {
+
+        // Create the result array
+        $result = array();
+        // Iterate over each array element
+        foreach ($array as $key => $value)
+        {
+            // Iterate over each search condition
+            foreach ($search as $k => $v)
+            {
+                // If the array element does not meet the search condition then continue to the next element
+                if (!isset($value[$k]) || $value[$k] != $v)
+                {
+                continue 2;
+                }
+            }
+            // Add the array element's key to the result array
+            $result[] = $key;
+        }
+        // Return the result array
+        return $result;
+    }
+
+    // DECK-custom functions using local DB data
+
+    public function custgetCardsOfTypeInLocation($type, $type_arg=null, $location, $location_arg = null)
+    {
+        if (is_null($type_arg) and is_null($location_arg)) {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_type' => $type, 'card_location' => $location)));
+        } elseif (is_null($type_arg) and !is_null($location_arg)) {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_type' => $type, 'card_location' => $location, 'card_location_arg' => $location_arg)));
+        } elseif (!is_null($type_arg) and is_null($location_arg)) {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_type' => $type, 'card_location' => $location, 'card_type_arg' => $type_arg)));
+        } else {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_type' => $type, 'card_location' => $location, 'card_location_arg' => $location_arg, 'card_type_arg' => $type_arg)));
+        }
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $cid = $this->dbcard[$ids[$i]]['card_id'];
+            $res[$cid] = array('id' => $cid,
+                'type' => $this->dbcard[$ids[$i]]['card_type'],
+                'type_arg' => $this->dbcard[$ids[$i]]['card_type_arg'],
+                'location' => $this->dbcard[$ids[$i]]['card_location'],
+                'location_arg' => $this->dbcard[$ids[$i]]['card_location_arg']);
+        }
+        return $res;
+    }
+
+    public function custcountCardInLocation($location, $location_arg=null)
+    {
+        /* Return the number of cards in specified location.
+            location (string): the location where to count the cards.
+            location_arg (optional): if specified, count only cards with the specified "location_arg". */
+        if (is_null($location_arg)) {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => $location)));
+        } else {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => $location, 'card_location_arg' => $location_arg)));
+        }
+        return count($ids);
+        
+    }
+    
+    public function custgetCardsInLocation($location, $location_arg = null, $order_by = null)
+    {
+        /* Get all cards in specific location, as an array. Return an empty array if the location is empty.
+            location (string): the location where to get the cards.
+            location_arg (optional): if specified, return only cards with the specified "location_arg".
+            order_by (optional): if specified, returned cards are ordered by the given database field. Example: "card_id" or "card_type". */
+        # code...
+        if (is_null($location_arg)) {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => $location)));
+        } else {
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => $location, 'card_location_arg' => $location_arg)));
+        }
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $cid = $this->dbcard[$ids[$i]]['card_id'];
+            $res[$cid] = array(
+                'id' => $cid,
+                'card_id' => $cid,
+                'type' => $this->dbcard[$ids[$i]]['card_type'],
+                'type_arg' => $this->dbcard[$ids[$i]]['card_type_arg'],
+                'location' => $this->dbcard[$ids[$i]]['card_location'],
+                'location_arg' => $this->dbcard[$ids[$i]]['card_location_arg']);
+        }
+        if (!is_null($order_by)) {
+            usort($res, function ($a, $b) use ($order_by) {
+                return $a[$order_by] <=> $b[$order_by];
+            });
+        }
+        return $res;
+    }
+
+    public function custgetCard($card_id)
+    {
+        /* Get specific card information.
+           Return null if this card is not found. */
+        $id = array_values($this->multi_array_search($this->dbcard, array('card_id' => $card_id)));
+        if (count($id) == 0) {
+            return null;
+        } else {
+            $cid = $this->dbcard[$id[0]]['card_id'];
+            return array(
+                'id' => $cid,
+                'card_id' => $cid,
+                'type' => $this->dbcard[$id[0]]['card_type'],
+                'type_arg' => $this->dbcard[$id[0]]['card_type_arg'],
+                'location' => $this->dbcard[$id[0]]['card_location'],
+                'location_arg' => $this->dbcard[$id[0]]['card_location_arg']);
+        }
+    }
 
     function get_teams()
     {
         // return array of players and their team
-        $sql = "SELECT player_id pid, team t FROM player";
-        $team_raw = self::getCollectionFromDB( $sql );
-        $team = array();
-        foreach ($team_raw as $player) {
-            $team[$player['pid']] = $player['t'];
-        }
-        return $team;
+        // example : Array ( [2356487] => 0 [2356488] => 1 [2356486] => 1 [2356482] => 0 )
+        return array_column($this->dbplayer,'team','player_id');
     }
 
     function getTeamPlayers($teamid)
     {
         // return array of players ids in team
-        $sql = "SELECT player_id pid FROM player WHERE team = $teamid";
-        return array_keys(self::getCollectionFromDB( $sql ));
+        $ids = array_values($this->multi_array_search($this->dbplayer, array('team' => $teamid)));
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $res[] = $this->dbplayer[$ids[$i]]['player_id'];
+        }
+        return $res;
     }
 
 
@@ -514,31 +670,44 @@ class BigMonster extends Table
         self::DbQuery( $sql );
     }
 
-    protected function getExplorer($player_id)
+    protected function getExplorer()
     {
-        $sql = "SELECT player_id, explorer_id FROM explorers WHERE selected = 1";
-        return self::getCollectionFromDb( $sql );
+        $ids = array_values($this->multi_array_search($this->dbexplorers, array('selected' => 1)));
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $pid = $this->dbexplorers[$ids[$i]]['player_id'];
+            $res[$pid] = array('player_id' => $pid, 'explorer_id' => $this->dbexplorers[$ids[$i]]['explorer_id']);
+        }
+        return $res;
     }
 
     protected function getCardsOnBoard($player_id=null, $type=null, $last_play=0)
     {
         if (!is_null($type) and $type != 0) {
-            $sql = "SELECT `card_id`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id AND `card_type` = $type";
+            //$sql = "SELECT `card_id`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id AND `card_type` = $type";
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => $type)));
         } elseif (!is_null($player_id) and $player_id != 0 and $last_play == 0) {
-            $sql = "SELECT `card_id`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id";
+            //$sql = "SELECT `card_id`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id";
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id)));
         } elseif (!is_null($player_id) and $player_id != 0 and $last_play > 0) {
-            $sql = "SELECT `card_id`, `card_location_arg`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id AND last_play = $last_play";
+            //$sql = "SELECT `card_id`, `card_location_arg`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND card_location_arg = $player_id AND last_play = $last_play";
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'last_play' => $last_play)));
         } else {
-            $sql = "SELECT `card_id`, `card_location_arg`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND last_play = $last_play";
-
+            //$sql = "SELECT `card_id`, `card_location_arg`, `card_type`, `card_type_arg`, `mutation`, `board_x`, `board_y` FROM card WHERE card_location = 'board' AND last_play = $last_play";
+            $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board', 'last_play' => $last_play)));
         }
-        //var_dump($sql);
-        return self::getCollectionFromDb( $sql );
-    }
-
-    protected function getCardOnBoard_xy($player_id, $x, $y)
-    {
-        $sql = "SELECT `card_id`, `card_type`, `card_type_arg` FROM card WHERE card_location = 'board' AND ard_location_arg = $player_id";
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $cid = $this->dbcard[$ids[$i]]['card_id'];
+            $res[$cid] = array('card_id' => $cid,
+                'card_type' => $this->dbcard[$ids[$i]]['card_type'],
+                'card_type_arg' => $this->dbcard[$ids[$i]]['card_type_arg'],
+                'card_location_arg' => $this->dbcard[$ids[$i]]['card_location_arg'],
+                'mutation' => $this->dbcard[$ids[$i]]['mutation'],
+                'board_x' => $this->dbcard[$ids[$i]]['board_x'],
+                'board_y' => $this->dbcard[$ids[$i]]['board_y']);
+        }
+        return $res;
     }
 
     protected function getUsedBoard($cardsOnBoard)
@@ -558,13 +727,17 @@ class BigMonster extends Table
         return $used_pos;
     }
 
-    protected function update_card_position($whichMove, $player_id)
+    protected function moveCardFromHandToBoard($whichMove, $player_id)
     {
-        $sql = "SELECT 0, `card_id`, `card_type`, `card_type_arg` FROM card WHERE `card_location` = 'hand' AND card_location_arg = $player_id"; // added the 0 to easily access results
-        $card_data = self::getCollectionFromDb( $sql);
+        //$sql = "SELECT 0, `card_id`, `card_type`, `card_type_arg` FROM card WHERE `card_location` = 'hand' AND card_location_arg = $player_id"; // added the 0 to easily access results -> removed from code using it
+        //$card_data = self::getCollectionFromDb( $sql);
+        $id = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'hand','card_location_arg' => $player_id)))[0];
+        $res= array('card_id' =>  $this->dbcard[$id]['card_id'],
+            'card_type' => $this->dbcard[$id]['card_type'],
+            'card_type_arg' => $this->dbcard[$id]['card_type_arg']);
         $sql = "UPDATE card SET `board_x` = ".  intval($whichMove[0]).", `board_y` = ". intval($whichMove[1]) .", `card_location` = 'board', `last_play` = 1 WHERE `card_location` = 'hand' AND card_location_arg = $player_id" ;
         self::DbQuery( $sql );
-        return $card_data;
+        return $res;
     }
 
     protected function moveCardsFromTo($cards,$from_location, $to_location, $from_location_arg=null, $to_location_arg=null)
@@ -589,8 +762,9 @@ class BigMonster extends Table
 
     protected function checkCardInHand($player_id, $sel_card)
     {
-        $sql = "SELECT 1 FROM card WHERE card_location = 'hand' AND card_location_arg = $player_id AND card_id = $sel_card";
-        if (!is_null(self::getUniqueValueFromDB( $sql ))) {
+        //$sql = "SELECT 1 FROM card WHERE card_location = 'hand' AND card_location_arg = $player_id AND card_id = $sel_card";
+        $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'hand','card_location_arg' => $player_id, 'card_id' => $sel_card)));
+        if (!empty($ids)) {
             return true;
         } else {
             return false;
@@ -599,14 +773,18 @@ class BigMonster extends Table
 
     protected function check_mutated($whichMove, $card_data, $player_id)
     {
+        // When a monster is place, check if there is mutagenic monster above or below
+        
         // check if a simple mutagenic monster is placed below
         $x = intval($whichMove[0]) - 1;
         $y = intval($whichMove[1]) + 2;
-        $sql = "SELECT COUNT(*) as count FROM card WHERE `card_location` = 'board' AND card_location_arg = $player_id AND `board_x` = $x AND `board_y` = $y AND (`card_type` = 2 AND `card_type_arg` = 2)";
-        $valid_upward_matagen = self::getUniqueValueFromDB( $sql );
+        //$sql = "SELECT COUNT(*) as count FROM card WHERE `card_location` = 'board' AND card_location_arg = $player_id AND `board_x` = $x AND `board_y` = $y AND (`card_type` = 2 AND `card_type_arg` = 2)";
+        $valid_upward_matagen = count(array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id,'board_x' => $x,'board_y' => $y,'card_type' => 2,'card_type_arg' => 2))));
+        //$valid_upward_matagen = self::getUniqueValueFromDB( $sql );
         // check if explorer 5 and card located above the mutagenic
-        $sql = "SELECT explorer_id FROM explorers WHERE selected = 1 AND player_id = $player_id AND explorer_id = 5"; 
-        if (!is_null(self::getUniqueValueFromDB( $sql )) and intval($whichMove[0]) == 1 and intval($whichMove[1]) == -2) {
+        //$sql = "SELECT explorer_id FROM explorers WHERE selected = 1 AND player_id = $player_id AND explorer_id = 5"; 
+        $ids = array_values($this->multi_array_search($this->dbexplorers, array('selected' => 1,'player_id' => $player_id, 'explorer_id' => 5)));
+        if (!empty($ids) and intval($whichMove[0]) == 1 and intval($whichMove[1]) == -2) {
             $valid_explorer_matagen = true;
         } else {
             $valid_explorer_matagen = false;
@@ -616,16 +794,19 @@ class BigMonster extends Table
         $y1 = intval($whichMove[1]) - 1;
         $x2 = intval($whichMove[0]);
         $y2 = intval($whichMove[1]) - 1;
-        $sql = "SELECT COUNT(*) as count FROM card WHERE `card_location` = 'board' AND card_location_arg = $player_id AND ((`board_x` = $x1 AND `board_y` = $y1) OR (`board_x` = $x2 AND `board_y` = $y2)) AND (`card_type` = 2 AND `card_type_arg` = 1)";
-        $valid_downward_matagen = self::getUniqueValueFromDB( $sql );
+        //$sql = "SELECT COUNT(*) as count FROM card WHERE `card_location` = 'board' AND card_location_arg = $player_id AND ((`board_x` = $x1 AND `board_y` = $y1) OR (`board_x` = $x2 AND `board_y` = $y2)) AND (`card_type` = 2 AND `card_type_arg` = 1)";
+        $valid_downward_matagen1 = count(array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => 2, 'card_type_arg' => 1, 'board_x' => $x1, 'board_y'=>$y1))));
+        $valid_downward_matagen2 = count(array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => 2, 'card_type_arg' => 1, 'board_x' => $x2, 'board_y'=>$y2))));
+        $valid_downward_matagen = $valid_downward_matagen1 + $valid_downward_matagen2;
+        //$valid_downward_matagen = self::getUniqueValueFromDB( $sql );
         if ($valid_upward_matagen > 0 or $valid_explorer_matagen or $valid_downward_matagen > 0) {
             if (($valid_upward_matagen > 0 or $valid_explorer_matagen) and $valid_downward_matagen > 0) {
                 //double mutagen
-                $sql = "UPDATE card SET mutation = 2 WHERE card_id = ".$card_data[0]['card_id'];
+                $sql = "UPDATE card SET mutation = 2 WHERE card_id = ".$card_data['card_id'];
                 self::DbQuery( $sql );
             } else {
                 //single mutagen
-                $sql = "UPDATE card SET mutation = 1 WHERE card_id = ".$card_data[0]['card_id'];
+                $sql = "UPDATE card SET mutation = 1 WHERE card_id = ".$card_data['card_id'];
                 self::DbQuery( $sql );
             }
             return true;
@@ -637,20 +818,43 @@ class BigMonster extends Table
     protected function check_mutation($whichMove, $card_data, $player_id)
     {
         $mutated_cards = array();
-        if (intval($card_data[0]['card_type_arg']) == 1) {
+        if (intval($card_data['card_type_arg']) == 1) {
             // double downward mutagenic monster
             $x1 = intval($whichMove[0]);
             $y1 = intval($whichMove[1]) + 1;
             $x2 = intval($whichMove[0]) + 1;
             $y2 = intval($whichMove[1]) + 1;
-            $sql = "SELECT `card_id`, `board_x`, `board_y`, `card_type_arg` FROM card WHERE `card_location` = 'board' AND `card_location_arg` = $player_id AND `card_type` = 1 AND ((`board_x` = $x1 AND `board_y` = $y1) OR (`board_x` = $x2 AND `board_y` = $y2))";
-            $mutated_cards = self::getCollectionFromDb( $sql);
+            //$sql = "SELECT `card_id`, `board_x`, `board_y`, `card_type_arg` FROM card WHERE `card_location` = 'board' AND `card_location_arg` = $player_id AND `card_type` = 1 AND ((`board_x` = $x1 AND `board_y` = $y1) OR (`board_x` = $x2 AND `board_y` = $y2))";
+            //$mutated_cards = self::getCollectionFromDb( $sql);
+            $mutated_card1_id = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => 1, 'board_x' => $x1, 'board_y'=>$y1)));
+            $mutated_card2_id = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => 1, 'board_x' => $x2, 'board_y'=>$y2)));
+            if (empty($mutated_card1_id) and empty($mutated_card2_id)) {
+                $mutated_cards = array();
+            } else {
+                $mutated_cards = array();
+                if (!empty($mutated_card1_id)) {
+                    $cid = $mutated_card1_id[0];
+                    $mutated_cards[$cid] = array('card_id' => $cid , 'board_x' => $this->dbcard[$cid]['board_x'], 'board_y' => $this->dbcard[$cid]['board_y'], 'card_type_arg' => $this->dbcard[$cid]['card_type_arg']);
+                }
+                if (!empty($mutated_card2_id)) {
+                    $cid = $mutated_card2_id[0];
+                    $mutated_cards[$cid] = array('card_id' => $cid , 'board_x' => $this->dbcard[$cid]['board_x'], 'board_y' => $this->dbcard[$cid]['board_y'], 'card_type_arg' => $this->dbcard[$cid]['card_type_arg']);
+                }
+            }
         } else {
             // simple upward mutagenic monster (right side)
             $x = intval($whichMove[0]) + 1;
             $y = intval($whichMove[1]) - 2;
-            $sql = "SELECT `card_id`, `board_x`, `board_y`, `card_type_arg` FROM card WHERE `card_location` = 'board' AND `card_location_arg` = $player_id AND `card_type` = 1 AND `board_x` = $x AND `board_y` = $y";
-            $mutated_cards = self::getCollectionFromDb( $sql);
+            //$sql = "SELECT `card_id`, `board_x`, `board_y`, `card_type_arg` FROM card WHERE `card_location` = 'board' AND `card_location_arg` = $player_id AND `card_type` = 1 AND `board_x` = $x AND `board_y` = $y";
+            //$mutated_cards = self::getCollectionFromDb( $sql);
+            $mutated_card_id = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id, 'card_type' => 1, 'board_x' => $x, 'board_y'=>$y)));
+            if (empty($mutated_card_id)) {
+                $mutated_cards = array();
+            } else {
+                $mutated_cards = array();
+                $cid = $mutated_card_id[0];
+                $mutated_cards[$cid] = array('card_id' => $cid , 'board_x' => $this->dbcard[$cid]['board_x'], 'board_y' => $this->dbcard[$cid]['board_y'], 'card_type_arg' => $this->dbcard[$cid]['card_type_arg']);
+            }
         }
         if (!empty($mutated_cards)) {
             // mute monster
@@ -666,25 +870,79 @@ class BigMonster extends Table
     {
         if (is_null($card_id)) {
             // return all ice monster with mutation level > 0
-            $sql = "SELECT card_id, mutation, board_x, board_y, card_location_arg FROM card WHERE mutation > 0";
-            return self::getCollectionFromDb( $sql);
+            $ids1 = array_values($this->multi_array_search($this->dbcard, array('mutation' => 1)));
+            $ids2 = array_values($this->multi_array_search($this->dbcard, array('mutation' => 2)));
+            $ids = array_merge($ids1, $ids2);
+            $res=array();
+            for ($i=0; $i < count($ids); $i++) {
+                $cid = $this->dbcard[$ids[$i]]['card_id'];
+                $res[$cid] = array('card_id' => $cid,
+                    'mutation' => $this->dbcard[$ids[$i]]['mutation'],
+                    'card_location_arg' => $this->dbcard[$ids[$i]]['card_location_arg'],
+                    'board_x' => $this->dbcard[$ids[$i]]['board_x'],
+                    'board_y' => $this->dbcard[$ids[$i]]['board_y']);
+            }
+            //$sql = "SELECT card_id, mutation, board_x, board_y, card_location_arg FROM card WHERE mutation > 0";
+            //return self::getCollectionFromDb( $sql);
+            return $res;
         } else {
             // return the mutation level of the card_id
-            $sql = "SELECT mutation FROM card WHERE card_id = $card_id";
-            return self::getUniqueValueFromDB( $sql );
+            $id = array_values($this->multi_array_search($this->dbcard, array('card_id' => $card_id)));
+            if (!empty($id)) {
+                $mutation = $this->dbcard[$id[0]]['mutation'];
+                $res = array($mutation => array('mutation'=>$mutation));
+            } else {
+                $res = array();
+            }
+            //$sql = "SELECT mutation FROM card WHERE card_id = $card_id";
+            //return self::getUniqueValueFromDB( $sql );
+            return $res;
         }
     }
 
     protected function get_last_played_cards()
     {
-        $sql = "SELECT card_id, board_x, board_y, card_type, card_type_arg, card_location_arg, mutation  FROM card WHERE last_play = 1";
-        return self::getCollectionFromDb( $sql);
+        //$sql = "SELECT card_id, board_x, board_y, card_type, card_type_arg, card_location_arg, mutation  FROM card WHERE last_play = 1";
+        //return self::getCollectionFromDb( $sql);
+        $ids = array_values($this->multi_array_search($this->dbcard, array('last_play' => 1)));
+        $res=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $cid = $this->dbcard[$ids[$i]]['card_id'];
+            $res[$cid] = array('card_id' => $cid,
+                'card_type' => $this->dbcard[$ids[$i]]['card_type'],
+                'card_type_arg' => $this->dbcard[$ids[$i]]['card_type_arg'],
+                'card_location_arg' => $this->dbcard[$ids[$i]]['card_location_arg'],
+                'mutation' => $this->dbcard[$ids[$i]]['mutation'],
+                'board_x' => $this->dbcard[$ids[$i]]['board_x'],
+                'board_y' => $this->dbcard[$ids[$i]]['board_y']);
+        }
+        return $res;
     }
 
     protected function get_last_muted_cards()
     {
-        $sql = "SELECT card_id, board_x, board_y, card_type, card_type_arg, card_location_arg, mutation  FROM card WHERE last_play = 2 ORDER BY card_location_arg";
-        return self::getCollectionFromDb( $sql);
+        //$sql = "SELECT card_id, board_x, board_y, card_type, card_type_arg, card_location_arg, mutation  FROM card WHERE last_play = 2 ORDER BY card_location_arg";
+        //return self::getCollectionFromDb( $sql);
+        $ids = array_values($this->multi_array_search($this->dbcard, array('last_play' => 2)));
+        $tres=array();
+        for ($i=0; $i < count($ids); $i++) {
+            $cid = $this->dbcard[$ids[$i]]['card_id'];
+            $tres[$cid] = array('card_id' => $cid,
+                'card_type' => $this->dbcard[$ids[$i]]['card_type'],
+                'card_type_arg' => $this->dbcard[$ids[$i]]['card_type_arg'],
+                'card_location_arg' => $this->dbcard[$ids[$i]]['card_location_arg'],
+                'mutation' => $this->dbcard[$ids[$i]]['mutation'],
+                'board_x' => $this->dbcard[$ids[$i]]['board_x'],
+                'board_y' => $this->dbcard[$ids[$i]]['board_y']);
+        }
+        usort($tres, function ($a, $b) {
+            return $a['card_location_arg'] <=> $b['card_location_arg'];
+        });
+        $res = array();
+        for ($i=0; $i < count($tres); $i++) { 
+            $res[$tres[$i]['card_id']] = $tres[$i];
+        }
+        return $res;
     }
 
     protected function reset_last_played()
@@ -744,8 +1002,8 @@ class BigMonster extends Table
         switch (intval($medal_id)) {
             case 3:
                 // indiv : 3 desert tiles - team : 6 desert tiles
-                $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$player_id));
-                $explorer_infos = $this->getExplorer($player_id);
+                $nbr_desert_tiles = count($this->custgetCardsOfTypeInLocation(7,null,'board',$player_id));
+                $explorer_infos = $this->getExplorer();
                 if ($explorer_infos[intval($player_id)]['explorer_id'] == 12) {
                     $nbr_desert_tiles++;
                 }
@@ -765,7 +1023,7 @@ class BigMonster extends Table
                 break;
             case 9:
                 // indiv : 4 rune *monsters* (not tile) - team : 8 rune *monsters* (not tile)
-                $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
+                $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$player_id);
                 $rune_count = $this->getrunecount($rune_monster);
                 if (!$this->isTeamPlay() and $rune_count >= 4) {
                     return true;
@@ -791,7 +1049,7 @@ class BigMonster extends Table
                     $teams = $this->get_teams(); // associative array with player_id as key and team_id as value
                     $team_count = array();
                     foreach ($teams as $player_id => $team_id) {
-                        $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
+                        $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$player_id);
                         $rune_count = $this->getrunecount($rune_monster);
                         $desert_count = $this->checkMedalSuccess('3', $player_id, false, $team_id, true);
                         $total_count = $rune_count + $desert_count;
@@ -807,9 +1065,9 @@ class BigMonster extends Table
                     $total_count = 999;
                     $users_counts = array();
                     foreach (array_keys($this->loadPlayersBasicInfos()) as $pid) {
-                        $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$pid);
+                        $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$pid);
                         $rune_count = $this->getrunecount($rune_monster);
-                        $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$pid));
+                        $nbr_desert_tiles = count($this->custgetCardsOfTypeInLocation(7,null,'board',$pid));
                         $user_count = intval($rune_count) + intval($nbr_desert_tiles);
                         $users_counts[$pid] = $user_count;
                     }
@@ -846,8 +1104,8 @@ class BigMonster extends Table
                 break;
             case 10:
                 // indiv : 4 swamp or grassland tiles -- team : 8 swamp or grassland tiles
-                $nbr_swamp_tiles = count($this->cards->getCardsOfTypeInLocation(5,null,'board',$player_id));
-                $nbr_grassland_tiles = count($this->cards->getCardsOfTypeInLocation(6,null,'board',$player_id));
+                $nbr_swamp_tiles = count($this->custgetCardsOfTypeInLocation(5,null,'board',$player_id));
+                $nbr_grassland_tiles = count($this->custgetCardsOfTypeInLocation(6,null,'board',$player_id));
                 if (!$this->isTeamPlay() and (($nbr_swamp_tiles + $nbr_grassland_tiles) >= 4)) {
                     return true;
                 } else if ($this->isTeamPlay() and !$get_details) {
@@ -866,18 +1124,18 @@ class BigMonster extends Table
                 // indiv : 5 different tiles on the board -- team : 7 different tiles on the board
                 $nbr_tile_types = 0;
                 for ($i=2; $i < 9; $i++) { 
-                    (count($this->cards->getCardsOfTypeInLocation($i,null,'board',$player_id)) > 0)?$nbr_tile_types++:null;
+                    (count($this->custgetCardsOfTypeInLocation($i,null,'board',$player_id)) > 0)?$nbr_tile_types++:null;
                 }
-                if (count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id)) < 1 and count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id)) > 0) {
+                if (count($this->custgetCardsOfTypeInLocation(2,null,'board',$player_id)) < 1 and count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id)) > 0) {
                     // ice and mutagenic are same type of monster, this is to avoid to count twice the types if a player have ice and mutagenic monster
                     $nbr_tile_types++;
                 }
-                $explorer_infos = $this->getExplorer($player_id);
-                if ($explorer_infos[intval($player_id)]['explorer_id'] == 5 and count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id)) < 1 and count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id)) < 1) {
+                $explorer_infos = $this->getExplorer();
+                if ($explorer_infos[intval($player_id)]['explorer_id'] == 5 and count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id)) < 1 and count($this->custgetCardsOfTypeInLocation(2,null,'board',$player_id)) < 1) {
                     // if player have the purple female explorer and no ice on board yet, add +1
                     $nbr_tile_types++;
                 }
-                if ($explorer_infos[intval($player_id)]['explorer_id'] == 12 and count($this->cards->getCardsOfTypeInLocation(7,null,'board',$player_id)) < 1) {
+                if ($explorer_infos[intval($player_id)]['explorer_id'] == 12 and count($this->custgetCardsOfTypeInLocation(7,null,'board',$player_id)) < 1) {
                     // if player have the orange male explorer and no desert monster on board yet, add +1
                     $nbr_tile_types++;
                 }
@@ -898,7 +1156,7 @@ class BigMonster extends Table
                 break;
             case 5:
                 // indiv 5 lava tiles -- team: 10 lava tiles
-                $nbr_lava_tiles = count($this->cards->getCardsOfTypeInLocation(4,null,'board',$player_id));
+                $nbr_lava_tiles = count($this->custgetCardsOfTypeInLocation(4,null,'board',$player_id));
                 if (!$this->isTeamPlay() and $nbr_lava_tiles >= 5) {
                     return true;
                 } else if ($this->isTeamPlay() and !$get_details) {
@@ -934,9 +1192,9 @@ class BigMonster extends Table
                 break;
             case 4:
                 // indiv : 6 ice tiles -- team : 12 ice tiles
-                $explorer_infos = $this->getExplorer($player_id);
-                $nbr_ice_tiles = count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id));
-                $nbr_mutagenic_tiles = count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id));
+                $explorer_infos = $this->getExplorer();
+                $nbr_ice_tiles = count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id));
+                $nbr_mutagenic_tiles = count($this->custgetCardsOfTypeInLocation(2,null,'board',$player_id));
                 ($explorer_infos[intval($player_id)]['explorer_id'] == 5)?$nbr_mutagenic_tiles++:null;
                 if (!$this->isTeamPlay() and ($nbr_ice_tiles + $nbr_mutagenic_tiles) >= 6) {
                     return true;
@@ -954,8 +1212,8 @@ class BigMonster extends Table
                 break;
             case 6:
                 // indiv : 4 mutagenic monsters -- team : 12 mutagenic monsters
-                $explorer_infos = $this->getExplorer($player_id);
-                $mutagenic_tiles = $this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id);
+                $explorer_infos = $this->getExplorer();
+                $mutagenic_tiles = $this->custgetCardsOfTypeInLocation(2,null,'board',$player_id);
                 $nbr_mutagenic_tiles=0;
                 foreach ($mutagenic_tiles as $card_id => $card_details) {
                     ($card_details['type_arg'] == 2)?$nbr_mutagenic_tiles++:null;
@@ -1004,7 +1262,7 @@ class BigMonster extends Table
         $green_count = 0;
         $red_count = 0;
         $blue_count = 0;
-        $explo_diamonds = $this->explorer_infos[$this->getExplorer($player_id)[$player_id]['explorer_id']]['diamonds'];
+        $explo_diamonds = $this->explorer_infos[$this->getExplorer()[$player_id]['explorer_id']]['diamonds'];
         $explo_has_topleft = false;
         $explo_has_left = false;
         $explo_has_top = false;
@@ -1222,9 +1480,9 @@ class BigMonster extends Table
                             # 1 / type of terrain
                             $nbr_tile_types = 0;
                             for ($i=2; $i < 9; $i++) { 
-                                (count($this->cards->getCardsOfTypeInLocation($i,null,'board',$player_id)) > 0)?$nbr_tile_types++:null;
+                                (count($this->custgetCardsOfTypeInLocation($i,null,'board',$player_id)) > 0)?$nbr_tile_types++:null;
                             }
-                            if (count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id)) < 1 and count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id)) > 1) {
+                            if (count($this->custgetCardsOfTypeInLocation(2,null,'board',$player_id)) < 1 and count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id)) > 1) {
                                 // ice and mutagenic are same type of monster, this is to avoid to count twice the types if a player have ice and mutagenic monster
                                 $nbr_tile_types++;
                             }
@@ -1232,13 +1490,13 @@ class BigMonster extends Table
                             break;
                         case 5:
                             # 2 / rune monster
-                            $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
+                            $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$player_id);
                             $rune_count = $this->getrunecount($rune_monster);
                             $grassland_pts += 2 * $rune_count;
                             break;
                         case 6:
                             # 1 / lava monster
-                            $grassland_pts += count($this->cards->getCardsOfTypeInLocation(4,null,'board',$player_id));
+                            $grassland_pts += count($this->custgetCardsOfTypeInLocation(4,null,'board',$player_id));
                             break;
                         case 7:
                             # 4 / complete big monster
@@ -1257,11 +1515,11 @@ class BigMonster extends Table
                             break;
                         case 8:
                             # 3 / desert tile
-                            $grassland_pts += 3 * count($this->cards->getCardsOfTypeInLocation(7,null,'board',$player_id));
+                            $grassland_pts += 3 * count($this->custgetCardsOfTypeInLocation(7,null,'board',$player_id));
                             break;
                         case 9:
                             # 2 / grassland tile
-                            $grassland_pts += 2 * count($this->cards->getCardsOfTypeInLocation(6,null,'board',$player_id));
+                            $grassland_pts += 2 * count($this->custgetCardsOfTypeInLocation(6,null,'board',$player_id));
                             break;
                         case 10:
                             # 1 / filled position around the tile
@@ -1374,26 +1632,26 @@ class BigMonster extends Table
         //var_dump($bigmonster_counted);
 
         // swamp monsters
-        $nbr_swamp_tiles = count($this->cards->getCardsOfTypeInLocation(5,null,'board',$player_id));
+        $nbr_swamp_tiles = count($this->custgetCardsOfTypeInLocation(5,null,'board',$player_id));
         $swamp_pts += $this->monster_infos[5]['pts'][$nbr_swamp_tiles];
         // explorer scores
-        $explorer_id = $this->getExplorer($player_id)[$player_id]['explorer_id'];
+        $explorer_id = $this->getExplorer()[$player_id]['explorer_id'];
         switch (intval($explorer_id)) {
             case 1:
                 # 1 / ice monster tile
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id));
                 break;
             case 4:
                 # 1 / lava monster tile
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(4,null,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(4,null,'board',$player_id));
                 break;
             case 6:
                 # 1 / mutagenic monster
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(2,2,'board',$player_id)) + 2 * count($this->cards->getCardsOfTypeInLocation(2,1,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(2,2,'board',$player_id)) + 2 * count($this->custgetCardsOfTypeInLocation(2,1,'board',$player_id));
                 break;
             case 7:
                 # 1 / grassland
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(6,null,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(6,null,'board',$player_id));
                 break;
             case 8:
                 # 2 / medal of 5 , 10 , -10 pts
@@ -1407,7 +1665,7 @@ class BigMonster extends Table
                 break;
             case 9:
                 # 2 / rune monster
-                $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
+                $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$player_id);
                 $rune_count = $this->getrunecount($rune_monster);
                 $explo_pts += 2 * $rune_count;
                 break;
@@ -1438,19 +1696,19 @@ class BigMonster extends Table
                 break;
             case 14:
                 # 3 / blue ice monster
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(1,1,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(1,1,'board',$player_id));
                 break;
             case 15:
                 # 3 / furious dragon (furious dragon on lava tile and on medal)
-                $explo_pts += count($this->cards->getCardsOfTypeInLocation(4,4,'board',$player_id)) + count($this->cards->getCardsOfTypeInLocation(4,5,'board',$player_id));
+                $explo_pts += count($this->custgetCardsOfTypeInLocation(4,4,'board',$player_id)) + count($this->custgetCardsOfTypeInLocation(4,5,'board',$player_id));
                 break;
             case 16:
                 # 2 / gold
-                $explo_pts += 2 + count($this->cards->getCardsOfTypeInLocation(4,6,'board',$player_id));
+                $explo_pts += 2 + count($this->custgetCardsOfTypeInLocation(4,6,'board',$player_id));
                 break;
             case 17:
                 # 5 / licorn
-                $explo_pts += 5 * count($this->cards->getCardsOfTypeInLocation(6,11,'board',$player_id)) + 5 * count($this->cards->getCardsOfTypeInLocation(6,12,'board',$player_id));
+                $explo_pts += 5 * count($this->custgetCardsOfTypeInLocation(6,11,'board',$player_id)) + 5 * count($this->custgetCardsOfTypeInLocation(6,12,'board',$player_id));
                 break;
             default:
                 # code...
@@ -1547,7 +1805,7 @@ class BigMonster extends Table
         $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
         $rem_cards = explode(',', $rem_cards_str);
         // check provided cards are correctly in hand
-        $cards = array_keys($this->cards->getCardsInLocation('hand', $player_id));
+        $cards = array_keys($this->custgetCardsInLocation('hand', $player_id));
         $cards_checked = 0;
         foreach ($rem_cards as $card_id) {
             if (!in_array($card_id, $cards)) {
@@ -1602,7 +1860,7 @@ class BigMonster extends Table
         }
         $player_id = self::getActivePlayerId();
         $rem_cards = explode(',', $rem_cards_str);
-        $cards = array_keys($this->cards->getCardsInLocation('hand', $source_row));
+        $cards = array_keys($this->custgetCardsInLocation('hand', $source_row));
         $cards_checked = 0;
         foreach ($rem_cards as $card_id) {
             if (!in_array($card_id, $cards)) {
@@ -1630,8 +1888,8 @@ class BigMonster extends Table
             throw new BgaVisibleSystemException (clienttranslate("Wrong sel_action value !"));
         }
         $sel_row = ($source_row == 1) ? 'upper' : 'lower';
-        $kind_monster = $this->cards->getCard( $sel_card )['type'];
-        $kind_monster_discard = $this->cards->getCard( $rem_cards[0] )['type'];
+        $kind_monster = $this->custgetCard( $sel_card )['type'];
+        $kind_monster_discard = $this->custgetCard( $rem_cards[0] )['type'];
         self::NotifyAllPlayers("SelectedTile", $log_msg ,array(
             "player_name" => self::getPlayerNameById($player_id),
             "monster_kind_name" => $this->tiles_info[$kind_monster]['name'],
@@ -1659,26 +1917,26 @@ class BigMonster extends Table
         }
         // get the placement position
         $whichMove = explode(',', $whichMove_str);
-        $card_data = $this->update_card_position($whichMove, $player_id);
+        $card_data = $this->moveCardFromHandToBoard($whichMove, $player_id);
         // check if placed tile get mutated
-        if (intval($card_data[0]['card_type']) == 1) {
+        if (intval($card_data['card_type']) == 1) {
             // placed tile is an ice monster
             if ($this->check_mutated($whichMove, $card_data, $player_id)) {
                 // tile is muted
-                $mutation_level = $this->get_mutation_level(intval($card_data[0]['card_id']));
+                $mutation_level = $this->get_mutation_level(intval($card_data['card_id']));
                 $notif_data = array(array(
                     "player_id" => $player_id,
                     "x"=> $whichMove[0],
                     "y"=> $whichMove[1],
-                    "card_id" => $card_data[0]['card_id'],
-                    "kind" => $card_data[0]['card_type_arg'],
+                    "card_id" => $card_data['card_id'],
+                    "kind" => $card_data['card_type_arg'],
                     "mutation_level" => $mutation_level)
                     );
                 self::NotifyPlayer( $player_id, "muted_monster", '', $notif_data);
             }
         }
         // check if placed tile creates mutation
-        if (intval($card_data[0]['card_type']) == 2) {
+        if (intval($card_data['card_type']) == 2) {
             // placed tile is a mutagenic monster
             $mutated_monster = $this->check_mutation($whichMove, $card_data, $player_id);
             if (!is_null($mutated_monster)) {
@@ -1761,7 +2019,7 @@ class BigMonster extends Table
     {
         $countcards = array();
         foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
-            $countcards[$player_id] = $this->cards->countCardInLocation( 'hand', $player_id );
+            $countcards[$player_id] = $this->custcountCardInLocation( 'hand', $player_id );
         }
         return $countcards;
     }
@@ -1857,7 +2115,7 @@ class BigMonster extends Table
     function argbmExploTileSelection()
     {
         # Send info of tile on the discard pile
-        $cards = $this->cards->getCardsInLocation( 'discard');
+        $cards = $this->custgetCardsInLocation( 'discard');
         return $cards;
     }
 
@@ -2191,12 +2449,12 @@ class BigMonster extends Table
         if (self::getPlayersNumber() < 4) {
             $active_row = self::getGameStateValue( 'active_row' );
             $other_row = ($active_row === 1) ? 0 : 1;
-            $row_cards_remaining = $this->cards->countCardInLocation( 'hand', $active_row );
+            $row_cards_remaining = $this->custcountCardInLocation( 'hand', $active_row );
             if ($row_cards_remaining >= 2) {
                 $this->activeNextPlayer();
                 $this->gamestate->nextState( 'var_tileSelection' );
             } else {
-                $tot_cards_remaining = $this->cards->countCardInLocation( 'deck' ) + $this->cards->countCardInLocation( 'hand');
+                $tot_cards_remaining = $this->custcountCardInLocation( 'deck' ) + $this->custcountCardInLocation( 'hand');
                 if ($tot_cards_remaining == 0) {
                     // end of the game
                     $this->gamestate->nextState( 'pregameEnd' );
@@ -2209,13 +2467,13 @@ class BigMonster extends Table
             $current_turn = intval(self::getGameStateValue( 'currentTurn' ));
             $current_turn += 1;
             self::setGameStateValue( 'currentTurn', $current_turn );
-            $cards_remaining = $this->cards->countCardInLocation( 'onShip', array_keys($players)[0]);
+            $cards_remaining = $this->custcountCardInLocation( 'onShip', array_keys($players)[0]);
             if ( $cards_remaining >= 2) {
                 //  5.1 -> If No, update cards location and go to tileSelection
                 $current_turn = self::getGameStateValue( 'currentTurn' );
                 foreach ($players as $player_id => $player) {
                     $this->cards->moveAllCardsInLocationKeepOrder( 'onShip', 'hand' );
-                    $cards = $this->cards->getCardsInLocation( 'hand', $player_id );
+                    $cards = $this->custgetCardsInLocation( 'hand', $player_id );
                     self::NotifyPlayer( $player_id, "updateHand", '', array( 
                         "cards" => $cards,
                         "event" => 'newTurn',
@@ -2389,7 +2647,7 @@ class BigMonster extends Table
             if ($statename == "var_tileSelection") {
                 $active_row = self::getGameStateValue( 'active_row' );
                 if ($active_row == 0) {
-                    $lower_row_cards_remaining = $this->cards->countCardInLocation( 'hand', 2 );
+                    $lower_row_cards_remaining = $this->custcountCardInLocation( 'hand', 2 );
                     if ($lower_row_cards_remaining > 0) {
                         $source_row = bga_rand( 1, 2 );
                     } else {
@@ -2398,7 +2656,7 @@ class BigMonster extends Table
                 } else {
                     $source_row = $active_row;
                 }
-                $cards = array_keys($this->cards->getCardsInLocation('hand', $source_row));
+                $cards = array_keys($this->custgetCardsInLocation('hand', $source_row));
                 $sel_card_idx = bga_rand( 0, count($cards) - 1 );
                 $sel_card = $cards[$sel_card_idx];
                 array_splice($cards,$sel_card_idx,1);
@@ -2407,8 +2665,8 @@ class BigMonster extends Table
                 $this->cards->moveCard(  $sel_card , 'zombieHand', 0); // move cards to zombie hand
                 $this->cards->moveCard(  $disc_card , 'discard', 0); // move cards to discard
                 $log_msg = clienttranslate('Zombie selected the ${monster_kind_name} monster and discarded the ${monster_kind_name_dicard} monster in the ${row} row');
-                $kind_monster = $this->cards->getCard( $sel_card )['type'];
-                $kind_monster_discard = $this->cards->getCard( $disc_card )['type'];
+                $kind_monster = $this->custgetCard( $sel_card )['type'];
+                $kind_monster_discard = $this->custgetCard( $disc_card )['type'];
                 $sel_row = ($source_row == 1) ? 'upper' : 'lower';
                 self::NotifyAllPlayers("SelectedTile", $log_msg ,array(
                     "monster_kind_name" => $this->tiles_info[$kind_monster]['name'],
@@ -2423,7 +2681,7 @@ class BigMonster extends Table
                 $this->gamestate->nextState( 'var_placeTile' );
             } elseif ($statename == "var_placeTile") {
                 // move card on hand to discard
-                $sel_card = array_keys($this->cards->getCardsInLocation('zombieHand'));
+                $sel_card = array_keys($this->custgetCardsInLocation('zombieHand'));
                 $this->cards->moveAllCardsInLocation('zombieHand', 'discard' );
                 self::NotifyAllPlayers("ZombiePlayedTile", '', ["sel_card" => $sel_card[0]]);
                 $this->gamestate->nextState( 'var_endTurn' );
@@ -2437,7 +2695,7 @@ class BigMonster extends Table
             switch ($statename) {
                 case 'explorerSelection':
                     // check if explorer has been selected
-                    $sel_explo = $this->getExplorer($active_player);
+                    $sel_explo = $this->getExplorer();
                     if (!array_key_exists($active_player, $sel_explo)) {
                         // get possible explorer for zombie player
                         $sql = "SELECT explorer_id FROM explorers WHERE player_id = $active_player";
@@ -2452,7 +2710,7 @@ class BigMonster extends Table
                     break;
                 case 'tileSelection':
                     // get card on hand of player
-                    $cards = array_keys($this->cards->getCardsInLocation('hand', $active_player));
+                    $cards = array_keys($this->custgetCardsInLocation('hand', $active_player));
                     $sel_card_idx = bga_rand( 0, count($cards) - 1 );
                     $sel_card = $cards[$sel_card_idx];
                     unset($cards[$sel_card_idx]); // cards_ids contains now the remaining cards list
