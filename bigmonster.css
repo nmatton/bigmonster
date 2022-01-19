@@ -155,12 +155,14 @@ padding-left: 4px;
 
   .tab:before{
     border-color : transparent #ddd transparent transparent;
+    transform : rotate(48deg);
     -webkit-transform : rotate(48deg);
     left: -23px;
   }
   
   .tab:after{
     border-color : transparent transparent transparent #ddd;
+    transform : rotate(-48deg);
     -webkit-transform : rotate(-48deg);
     right: -16px;
   }
