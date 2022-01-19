@@ -24,7 +24,7 @@ class BigMonster extends Table
 {
 	function __construct( )
 	{
-        // Your global variables labels:
+        //**  Your global variables labels:
         //  Here, you can assign labels to global variables you are using for this game.
         //  You can use any number of global variables with IDs between 10 and 99.
         //  If your game has options (variants), you also have to associate here a label to
@@ -34,7 +34,6 @@ class BigMonster extends Table
         self::initGameStateLabels( array( 
                          "currentRound" => 10,
                          "currentTurn" => 11,
-                         "game_mode" => 12,
                          "active_row" => 13,
                          "first_player" => 14,
                          "playmode" => 101,
@@ -52,7 +51,7 @@ class BigMonster extends Table
     }	
 
     /*
-        setupNewGame:
+        //** setupNewGame:
         
         This method is called only once, when a new game is launched.
         In this method, you must setup the game according to the game rules, so that
@@ -85,7 +84,6 @@ class BigMonster extends Table
         self::setGameStateInitialValue( 'currentRound', 0 );
         self::setGameStateInitialValue( 'currentTurn', 0 );
         self::setGameStateInitialValue( 'teamdefined', 0 ); // 0 = team not defined, 1 = team defined
-        self::setGameStateInitialValue( 'game_mode', 1 ); // 1 = solo play ; 2 = team play
         self::setGameStateInitialValue( 'active_row', 0 ); // usefull for 2 and 3 players mode - active row of tile (where user can pick a card). 1 = top row; 2 = bottom row
         // Create cards
         $cards = array ();
@@ -257,22 +255,32 @@ class BigMonster extends Table
         } 
 
         // Selection of random Medals
-        // def of possible medals (2 to 6 players - individual)
-        $possible_grass_medal = [10,8];
-        $possible_water_medal = [1,8];
-        $possible_lava_medal = [8,5,2];
-        $possible_ice_medal = [8,4,6];
+        // numbers (id) of medals corresponds to medals_info key in materials.inc.php
         $medals = array();
-        // selection of medal
-        while (count(array_unique(array_values($medals))) != 4) {
-            $medals = array(
-                'grass' => $possible_grass_medal[bga_rand( 0, 1 )],
-                'water' => $possible_water_medal[bga_rand( 0, 1 )],
-                'lava' => $possible_lava_medal[bga_rand( 0, 2 )],
-                'ice' => $possible_ice_medal[bga_rand( 0, 2 )]
-            );
+        if ($this->isTeamPlay()) {
+            $possible_water_medal = [1,10,8];
+            $possible_lava_medal = [5,4,6,2,8];
+            while (count(array_unique(array_values($medals))) != 2) {
+                $medals = array(
+                    'water' => $possible_water_medal[bga_rand(0,2)],
+                    'lava' => $possible_lava_medal[bga_rand(0,4)]);
+            }
+        } else {
+            // def of possible medals (2 to 6 players - individual)
+            $possible_grass_medal = [10,8];
+            $possible_water_medal = [1,8];
+            $possible_lava_medal = [8,5,2];
+            $possible_ice_medal = [8,4,6];
+            // selection of medal
+            while (count(array_unique(array_values($medals))) != 4) {
+                $medals = array(
+                    'grass' => $possible_grass_medal[bga_rand( 0, 1 )],
+                    'water' => $possible_water_medal[bga_rand( 0, 1 )],
+                    'lava' => $possible_lava_medal[bga_rand( 0, 2 )],
+                    'ice' => $possible_ice_medal[bga_rand( 0, 2 )]
+                );
+            }
         }
-        //var_dump($medals);
 
         $this->setMedalSelection($medals);
         
@@ -285,11 +293,11 @@ class BigMonster extends Table
 
        
 
-        /************ End of the game initialization *****/
+        //** End of the game initialization **/
     }
 
     /*
-        getAllDatas: 
+        //** getAllDatas: 
         
         Gather all informations about current game situation (visible by the current player).
         
@@ -340,7 +348,8 @@ class BigMonster extends Table
         }
         $medals = $this->getMedalsInfo();
         foreach ($medals as $medal_id => $medal_details) {
-            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'game_mode' )][$this->medals_infos[$medal_id]['pts']];
+            if ($medal_id > 10) $medal_id = floor($medal_id/10);
+            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$medal_id]['pts']];
         }
         $result['medals'] = $medals;
         $result['first_player'] = self::getGameStateValue( 'first_player' );
@@ -376,62 +385,13 @@ class BigMonster extends Table
         }
     }
 
-    /*  **************
-        DEBUG
-    *******************/
-
-    public function sendScoreBoard()
-    {
-        
-        // set stats and compute total scores
-        $breakdowns = array();
-        foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
-            // Compute score with details
-            $score = $this->computeScore($player_id, true);
-            // append to breakdowns
-            $breakdowns[$player_id] = $score;
-            // get diamonds counts
-            $diams = $this->getDiamondsCount($player_id);
-            // organise stats results
-            $player_stat_results = array(
-                "explorer" => $this->getUniqueValueFromDB("SELECT explorer_id FROM explorers WHERE player_id = $player_id AND selected = 1"),
-                "pts_ice" => $score['ice'],
-                "pts_bm" => $score['bigmonster'],
-                "pts_lava" => $score['lava'] ,
-                "pts_grassland" => $score['grassland'] ,
-                "pts_swamp" => $score['swamp'] ,
-                "pts_diams" => $score['diams'] ,
-                "pts_explo" => $score['explo'] ,
-                "pts_medals" => $score['medals'] ,
-                "nbr_blue" => $diams['blue'] ,
-                "nbr_red" => $diams['red'] ,
-                "nbr_green" => $diams['green']);
-            $p_stats = $this->getStatList();
-            foreach ($p_stats as $stat_name) {
-                self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
-            }
-            // set the tie-breaker score
-            self::DbQuery( "UPDATE player SET player_score_aux = ".$score['bigmonster']." WHERE player_id='".$player_id."'" );
-        }
-
-        // TODO : In theory there can be multiple...
-        $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
-
-        // send notif of end scores
-        $notif_data = array(
-            "breakdowns" => $breakdowns,
-            "winner_ids" => $winner_id
-        );
-        self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
-    }
-
 // ** Utility functions **
 
     /*
         In this space, you can put any utility methods useful for your game logic
     */
 
-    // ! TESTING AND DEBUG FUNCTIONS ! //
+    // ! ------ TESTING AND DEBUG FUNCTIONS ! //
 
     // ! move some cards from deck to discard (in 2/3p variant, to get faster to end of phase 1 or 2) -> should be a multiple of dealed cards (4 in 2p mode or 6 in 3p mode) --- 
     public function movetodiscard($n_to_move)
@@ -472,6 +432,8 @@ class BigMonster extends Table
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
     }
 
+    // ! ------ end of testing and debug functions /////
+
 
     function get_teams()
     {
@@ -484,6 +446,14 @@ class BigMonster extends Table
         }
         return $team;
     }
+
+    function getTeamPlayers($teamid)
+    {
+        // return array of players ids in team
+        $sql = "SELECT player_id pid FROM player WHERE team = $teamid";
+        return array_keys(self::getCollectionFromDB( $sql ));
+    }
+
 
     // recursive flattening of array
     function array_flatten($array) { 
@@ -725,17 +695,36 @@ class BigMonster extends Table
 
     protected function setMedalSelection($medals)
     {
-        // insert permanent medals
-        $perm_medals = array('desert' => 3, 'rune' => 9, 'lowest' => 7);
+        // insert indivudual permanent medals
+        $perm_medals = array('desert' => 3, 'rune' => 9);
         foreach ($perm_medals as $type => $medal_code) {
             $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code, 0)";
             self::DbQuery( $sql );
         }
-        // insert random medals
-        foreach ($medals as $type => $medal_code) {
-            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code, 0)";
+        if ($this->isTeamPlay()) {
+            // insert permeamnt penalty medals for team
+            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('lowest', 71, 0)";
             self::DbQuery( $sql );
-        } 
+            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('lowest', 72, 0)";
+            self::DbQuery( $sql );
+            foreach ($medals as $type => $medal_code) {
+                for ($i=1; $i < 3; $i++) { 
+                    $medal_code_team = ($medal_code * 10) + $i;
+                    $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code_team, 0)";
+                    self::DbQuery( $sql );
+                }
+            }
+        } else {
+            // individual play
+            // insert permament penalty medals
+            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('lowest', 7, 0)";
+            self::DbQuery( $sql );
+            // insert random medals
+            foreach ($medals as $type => $medal_code) {
+                $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code, 0)";
+                self::DbQuery( $sql );
+            }
+        }
     }
 
     protected function getMedalsInfo()
@@ -750,54 +739,86 @@ class BigMonster extends Table
         self::DbQuery( $sql );
     }
 
-    protected function checkMedalSuccess($medal_id, $player_id=null, $printres=false)
+    protected function checkMedalSuccess($medal_id, $player_id=null, $printres=false, $teamid=0, $get_details=false)
     {
         switch (intval($medal_id)) {
             case 3:
-                // 3 desert tiles
+                // indiv : 3 desert tiles - team : 6 desert tiles
                 $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$player_id));
                 $explorer_infos = $this->getExplorer($player_id);
                 if ($explorer_infos[intval($player_id)]['explorer_id'] == 12) {
                     $nbr_desert_tiles++;
                 }
-                if ($nbr_desert_tiles >= 3) {
+                if (!$this->isTeamPlay() and $nbr_desert_tiles >= 3) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_desert_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_desert_tiles >= 6) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_desert_tiles;
                 } else {
+                    return false;
                 }
                 break;
             case 9:
-                // 4 rune *monsters* (not tile)
+                // indiv : 4 rune *monsters* (not tile) - team : 8 rune *monsters* (not tile)
                 $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
                 $rune_count = $this->getrunecount($rune_monster);
-                if ($rune_count >= 4) {
+                if (!$this->isTeamPlay() and $rune_count >= 4) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_rune_count = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_rune_count >= 8) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $rune_count;
+                } else {
+                    return false;
                 }
                 break;
             case 7:
                 // the lowest number of desert and rune monsters
-                // THIS IS THE ONLY CASE WHERE IT RETURNS A PLAYER_ID AND NOT BOOL
-                $total_count = 999;
-                $medal_owners = array();
-                foreach (array_keys($this->loadPlayersBasicInfos()) as $pid) {
-                    $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$pid);
-                    $rune_count = $this->getrunecount($rune_monster);
-                    $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$pid));
-                    $user_count = intval($rune_count) + intval($nbr_desert_tiles);
-                    if ($user_count < $total_count) {
-                        $medal_owner = $pid;
-                        $total_count = $user_count;
-                    } elseif ($user_count == $total_count) {
-                        $medal_owners[] = $medal_owner;
-                        $medal_owners[] = $pid;
+                // THIS IS THE ONLY CASE WHERE THE FUNCTION DOES NOT RETURNS A BOOL
+                // RETURN A ARRAY OF PLAYER_ID FOR INDVIDUAL PLAY
+                // RETURN ARRAY OF TEAM_ID FOR TEAM PLAY
+                if ($this->isTeamPlay()) {
+                    $total_count = 999;
+                    $teams = $this->get_teams(); // associative array with player_id as key and team_id as value
+                    $team_count = array();
+                    foreach ($teams as $player_id => $team_id) {
+                        $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$player_id);
+                        $rune_count = $this->getrunecount($rune_monster);
+                        $desert_count = $this->checkMedalSuccess('3', $player_id, false, $team_id, true);
+                        $total_count = $rune_count + $desert_count;
+                        if (key_exists($team_id, $team_count)) {
+                            $team_count[$team_id] = min($total_count, $team_count[$team_id]);
+                        } else {
+                            $team_count[$team_id] = $total_count;
+                        }
                     }
+                    $team_medal_owner = array_values(array_keys($team_count,min($team_count)));
+                    return $team_medal_owner;
+                } else {
+                    $total_count = 999;
+                    $users_counts = array();
+                    foreach (array_keys($this->loadPlayersBasicInfos()) as $pid) {
+                        $rune_monster = $this->cards->getCardsOfTypeInLocation(8,null,'board',$pid);
+                        $rune_count = $this->getrunecount($rune_monster);
+                        $nbr_desert_tiles = count($this->cards->getCardsOfTypeInLocation(7,null,'board',$pid));
+                        $user_count = intval($rune_count) + intval($nbr_desert_tiles);
+                        $users_counts[$pid] = $user_count;
+                    }
+                    $user_medal_owner = array_values(array_keys($users_counts,min($users_counts)));
+                    return $user_medal_owner;
                 }
-                if (count($medal_owners) === 0) {
-                    $medal_owners[] = $medal_owner;
-                }
-                return $medal_owners;
                 break;
             case 1:
-                // 2 complete big monsters
+                // indiv : 2 complete big monsters - team : 4 complete big monsters
                 $big_monsters = $this->getCardsOnBoard($player_id, 3);
                 $complete_bm_count = 0;
                 foreach ($big_monsters as $card_id => $value) {
@@ -809,31 +830,43 @@ class BigMonster extends Table
                         }
                     }
                 }
-                if ($complete_bm_count >= 2) {
-                    //echo('true :)');
+                if (!$this->isTeamPlay() and $complete_bm_count >= 2) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_complete_bm_count = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_complete_bm_count >= 4) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $complete_bm_count;
                 } else {
-                    //echo('false :(');
+                    return false;
                 }
                 break;
             case 10:
-                // 4 swamp or grassland tiles
+                // indiv : 4 swamp or grassland tiles -- team : 8 swamp or grassland tiles
                 $nbr_swamp_tiles = count($this->cards->getCardsOfTypeInLocation(5,null,'board',$player_id));
                 $nbr_grassland_tiles = count($this->cards->getCardsOfTypeInLocation(6,null,'board',$player_id));
-                if (($nbr_swamp_tiles + $nbr_grassland_tiles) >= 4) {
-                    //echo('true :)');
+                if (!$this->isTeamPlay() and (($nbr_swamp_tiles + $nbr_grassland_tiles) >= 4)) {
                     return true;
-                }else {
-                    //echo('false :(');
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_swamp_grass_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_swamp_grass_tiles >= 8) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_swamp_tiles + $nbr_grassland_tiles;
+                } else {
+                    return false;
                 }
                 break;
             case 8:
-                // 5 different tiles on the board
+                // indiv : 5 different tiles on the board -- team : 7 different tiles on the board
                 $nbr_tile_types = 0;
                 for ($i=2; $i < 9; $i++) { 
                     (count($this->cards->getCardsOfTypeInLocation($i,null,'board',$player_id)) > 0)?$nbr_tile_types++:null;
-                    //echo("type  : " . $i. " - number : " . count($this->cards->getCardsOfTypeInLocation($i,null,'board',$player_id)) . "  -  result  :  " . $nbr_tile_types );
-
                 }
                 if (count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id)) < 1 and count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id)) > 0) {
                     // ice and mutagenic are same type of monster, this is to avoid to count twice the types if a player have ice and mutagenic monster
@@ -848,44 +881,79 @@ class BigMonster extends Table
                     // if player have the orange male explorer and no desert monster on board yet, add +1
                     $nbr_tile_types++;
                 }
-                if ($nbr_tile_types >= 5) {
+                if (!$this->isTeamPlay() and($nbr_tile_types >= 5)) {
                     if ($printres) var_dump($nbr_tile_types);
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_tile_types = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_tile_types >= 7) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_tile_types;
                 } else {
-                    if ($printres) var_dump($nbr_tile_types);
-                    //echo('false :(');
-                    //var_dump($nbr_tile_types);
+                    return false;
                 }
                 break;
             case 5:
-                // 5 lava tiles
+                // indiv 5 lava tiles -- team: 10 lava tiles
                 $nbr_lava_tiles = count($this->cards->getCardsOfTypeInLocation(4,null,'board',$player_id));
-                if ($nbr_lava_tiles >= 5) {
+                if (!$this->isTeamPlay() and $nbr_lava_tiles >= 5) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_lava_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_lava_tiles >= 10) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_lava_tiles;
                 } else {
-                    //echo('false :)');
+                    return false;
                 }
                 break;
             case 2:
-                // 3 different crystal completed
+                // indiv : 3 different crystal completed -- team : 3 trios of different crystal completed
                 $diams_info =$this->getDiamondsCount($player_id);
-                if ($diams_info['red'] > 0 and $diams_info['green'] > 0 and $diams_info['blue'] > 0) {
+                if (!$this->isTeamPlay() and ($diams_info['red'] > 0 and $diams_info['green'] > 0 and $diams_info['blue'] > 0)) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_diams_info1 = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true);
+                    $tot_diams_info2 = $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    $diams_tot = array('red' => $tot_diams_info1['red'] + $tot_diams_info2['red'], 'green' => $tot_diams_info1['green'] + $tot_diams_info2['green'], 'blue' => $tot_diams_info1['blue'] + $tot_diams_info2['blue']);
+                    if ($diams_tot['red'] >= 3 and $diams_tot['green'] >= 3 and $diams_tot['blue'] >= 3) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $diams_info;
+                } else {
+                    return false;
                 }
                 break;
             case 4:
-                // 6 ice tiles
+                // indiv : 6 ice tiles -- team : 12 ice tiles
                 $explorer_infos = $this->getExplorer($player_id);
                 $nbr_ice_tiles = count($this->cards->getCardsOfTypeInLocation(1,null,'board',$player_id));
                 $nbr_mutagenic_tiles = count($this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id));
                 ($explorer_infos[intval($player_id)]['explorer_id'] == 5)?$nbr_mutagenic_tiles++:null;
-                if (($nbr_ice_tiles + $nbr_mutagenic_tiles) >= 6) {
-                    //echo('true :)');
+                if (!$this->isTeamPlay() and ($nbr_ice_tiles + $nbr_mutagenic_tiles) >= 6) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_ice_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_ice_tiles >= 12) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_ice_tiles + $nbr_mutagenic_tiles;
+                } else {
+                    return false;
                 }
                 break;
             case 6:
-                // 4 mutagenic monsters
+                // indiv : 4 mutagenic monsters -- team : 12 mutagenic monsters
                 $explorer_infos = $this->getExplorer($player_id);
                 $mutagenic_tiles = $this->cards->getCardsOfTypeInLocation(2,null,'board',$player_id);
                 $nbr_mutagenic_tiles=0;
@@ -894,8 +962,18 @@ class BigMonster extends Table
                     ($card_details['type_arg'] == 1)?$nbr_mutagenic_tiles+=2:null;
                 }
                 ($explorer_infos[intval($player_id)]['explorer_id'] == 5)?$nbr_mutagenic_tiles++:null;
-                if ($nbr_mutagenic_tiles >= 4) {
+                if (!$this->isTeamPlay() and $nbr_mutagenic_tiles >= 4) {
                     return true;
+                } else if ($this->isTeamPlay() and !$get_details) {
+                    $team_player_ids = $this->getTeamPlayers($teamid);
+                    $tot_mutagenic_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
+                    if ($tot_mutagenic_tiles >= 12) {
+                        return true;
+                    }
+                } else if($get_details){
+                    return $nbr_mutagenic_tiles;
+                } else {
+                    return false;
                 }
                 break;
             default:
@@ -2066,7 +2144,7 @@ class BigMonster extends Table
                             "player_id" => $player_id,
                             "medal_id" => $medal_id,
                             "pts" => $this->medals_infos[$medal_details['medal_id']]['pts'],
-                            "back_id" => $this->matching_pts_back_id[self::getGameStateValue( 'game_mode' )][$this->medals_infos[$medal_id]['pts']])
+                            "back_id" => $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$medal_id]['pts']])
                         );
                     }
                 }

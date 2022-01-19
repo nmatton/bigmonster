@@ -465,6 +465,28 @@ padding-left: 4px;
     transform: rotateY(180deg);
 }
 
+.medal_group {
+    position: relative;
+    width: 150px;
+    margin-right: 10px;
+}
+
+#medals > div.medal-group > div.top-level {
+    position: absolute;
+    left: 50px;
+    z-index: 5;
+}
+
+#medals > div.medal-group > div.bottom-level {
+    display: inline-flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#medals > div.medal-group > div.bottom-level > div.medal {
+    filter: sepia(100%);
+}
 
 .medal {
     position: absolute;

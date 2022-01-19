@@ -519,7 +519,6 @@ function (dojo, declare) {
                     let medal_info =  (this.game_mode == 1 ) ? gamedatas.help_medals[medal_id]['nametr'] : gamedatas.help_medals[medal_id]['nametr_team'];
                     this.addTooltip( 'medal_'+medal_id+'_'+this.game_mode, medal_info, '', 10 )
                     this.addTooltip( 'back_medal_'+medal_id, medal_info, '', 0 )
-                    
                 }
             }
 
