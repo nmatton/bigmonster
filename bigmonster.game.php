@@ -349,8 +349,12 @@ class BigMonster extends Table
         }
         $medals = $this->getMedalsInfo();
         foreach ($medals as $medal_id => $medal_details) {
-            if ($medal_id > 10) $medal_id = floor($medal_id/10);
-            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$medal_id]['pts']];
+            if ($medal_id > 10) {
+                $info_id = floor($medal_id/10);
+            } else {
+                $info_id = $medal_id;
+            }
+            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$info_id]['pts']];
         }
         $result['medals'] = $medals;
         $result['first_player'] = self::getGameStateValue( 'first_player' );
@@ -960,12 +964,19 @@ class BigMonster extends Table
             self::DbQuery( $sql );
         }
         if ($this->isTeamPlay()) {
-            // insert permeamnt penalty medals for team
-            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('lowest', 71, 0)";
-            self::DbQuery( $sql );
-            $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('lowest', 72, 0)";
-            self::DbQuery( $sql );
+            // insert permeamnt medals for team
+            $perm_team_medals = array('desert' => 31, 'lowest' => 71, 'rune' => 91);
+            foreach ($perm_team_medals as $type => $medal_code) {
+                for ($i=0; $i < 2; $i++) { 
+                    $mc = $medal_code + $i;
+                    $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $mc, 0)";
+                    self::DbQuery( $sql );
+                }
+            }
+
             foreach ($medals as $type => $medal_code) {
+                $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code, 0)";
+                self::DbQuery( $sql );
                 for ($i=1; $i < 3; $i++) { 
                     $medal_code_team = ($medal_code * 10) + $i;
                     $sql = "INSERT INTO medals (type, medal_id, player_id) VALUES ('$type', $medal_code_team, 0)";

@@ -155,17 +155,18 @@
 var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${MY_ITEM_ID}"></div>';
 */
 var jstpl_medal_player_area = '<div class="medal_area_inner" id="mia_${player_id}_${medal_id}">\
-    <div id="medal_${medal_id}_${type}" class="medal" medal-id="${medal_id}" medal-type="${type}"></div>\
+    <div id="medal_${medal_id}_${type}" class="medal" medal-id="${data_id}" medal-type="${type}"></div>\
     <div id="back_medal_${medal_id}" class="back_medal" data-id="${back_id}"></div>\
     </div>';
 var jstpl_player_board_medal_zone = '<div class="medal_area" id="ma_${player_id}"></div>';
 var jstpl_player_board_medal_innerzone = '<div class="medal_area_inner" id="mia_${player_id}_${medal_id}">';
 var jstpl_medal_player_stock = '<div class="medal_area_inner" id="stock_${medal_id}">\
-    <div id="medal_${medal_id}_${type}" class="medal" medal-id="${medal_id}" medal-type="${type}"></div>\
+    <div id="medal_${medal_id}_${type}" class="medal" medal-id="${data_id}" medal-type="${type}"></div>\
     <div id="back_medal_${medal_id}" class="back_medal" data-id="${back_id}"></div>\
     </div>';
 var jstpl_back_medal = '<div class="back_medal" id="medal_${medal_id}"" data-id="${back_id}"></div>';
 var jstpl_front_medal = '<div id="medal_${medal_id}_${type}" class="medal" medal-id="${medal_id}" medal-type="${type}"></div>';
+var jstpl_medal_group ='<div class="medal-group" id="group_${medal_group}"><div class="top-level" id="top_${medal_group}"></div><div class="bottom-level" id="bottom_${medal_group}"></div></div>';
 var jstpl_helpIcon = `
 <div id='help-icon'>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">

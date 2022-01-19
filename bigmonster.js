@@ -67,6 +67,7 @@ function (dojo, declare) {
         {
             console.log(gamedatas);
             this.isTeamPlay = gamedatas.isTeamPlay;
+            if (this.isTeamPlay) this.game_mode = 2;
             this.teams = gamedatas.teams;
             this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
             this.team_defined = toint(gamedatas.teamdefined);
@@ -489,14 +490,17 @@ function (dojo, declare) {
             for (const i in this.gamedatas.medals) {
                 if (Object.hasOwnProperty.call(this.gamedatas.medals, i)) {
                     const medal = this.gamedatas.medals[i];
-                    medal_id = toint(medal['medal_id']);
-                    location_id = medal['player_id'];
-                    back_id = medal['back_id'];
+                    let medal_id = toint(medal['medal_id']);
+                    let info_id = toint((medal_id>10) ? Math.floor(medal_id/10):medal_id);
+                    let medal_type = (medal_id>10)?2:1;
+                    let location_id = medal['player_id'];
+                    let back_id = medal['back_id'];
                     if (location_id == 0) {
                         // add the medal on stock of medals
                         let cardDiv = this.format_block('jstpl_medal_player_stock', {
                             medal_id : medal_id,
-                            type : this.game_mode,
+                            data_id: info_id,
+                            type : medal_type,
                             back_id : back_id
                         });
                         medal_area = $('medals')
@@ -510,16 +514,47 @@ function (dojo, declare) {
                             var player_medal_zone_div = $('ma_'+player_id);
                             dojo.place( this.format_block('jstpl_medal_player_area',{
                                 medal_id : medal_id,
+                                data_id: info_id,
                                 player_id : player_id,
-                                type : this.game_mode,
+                                type : medal_type,
                                 back_id : back_id} ), player_medal_zone_div );
                         });
                         this.medals_status[medal_id] = true;
                     }
-                    let medal_info =  (this.game_mode == 1 ) ? gamedatas.help_medals[medal_id]['nametr'] : gamedatas.help_medals[medal_id]['nametr_team'];
-                    this.addTooltip( 'medal_'+medal_id+'_'+this.game_mode, medal_info, '', 10 )
+                    let medal_info =  (medal_type == 1 ) ? gamedatas.help_medals[medal_id]['nametr'] : gamedatas.help_medals[info_id]['nametr_team'];
+                    this.addTooltip( 'medal_'+medal_id+'_'+medal_type, medal_info, '', 10 )
                     this.addTooltip( 'back_medal_'+medal_id, medal_info, '', 0 )
                 }
+            }
+            if (this.isTeamPlay) {
+                let placed_groups = [];
+                for (let i in this.medals_status){
+                    if (!this.medals_status[i]) {
+                        if (i>10) {
+                            if (!placed_groups.includes(toint(Math.floor(i/10)))) {
+                                let groupDiv = this.format_block('jstpl_medal_group', {
+                                    medal_group : Math.floor(i/10)
+                                });
+                                dojo.place(groupDiv, 'medals');
+                                placed_groups.push(toint(Math.floor(i/10)));
+                            }
+                            dojo.place('stock_'+i, 'bottom_'+Math.floor(i/10));
+                            if (i % 10 == 2) {
+                                dojo.query('#stock_'+i).addClass('second');
+                            }
+                        } else {
+                            if (!placed_groups.includes(toint(i))) {
+                                let groupDiv = this.format_block('jstpl_medal_group', {
+                                    medal_group : i
+                                });
+                                dojo.place(groupDiv, 'medals');
+                                placed_groups.push(toint(i));
+                            }
+                            dojo.place('stock_'+i, 'top_'+i);
+                        }
+                    }
+                }
+                this.rearrange_medals();
             }
 
             if (this.nums_of_players < 4 && $('ma_'+this.gamedatas.first_player) && this.gamedatas.first_player != 0) {
@@ -888,6 +923,16 @@ function (dojo, declare) {
             script.
         
         */
+
+        rearrange_medals() {
+            let groups = dojo.query('.medal-group');
+            groups.forEach(element => {
+                if (element.childNodes[0].childElementCount == 0) {
+                    dojo.query('#'+element.id).addClass('bottom_only');
+                    console.log('bottom only of '+element.id);
+                }
+            });
+        },
 
         getOtherTeamMember(team_array, team_value, player_id) {
             return Object.keys(team_array).find(key => team_array[key] == team_value && key != player_id);

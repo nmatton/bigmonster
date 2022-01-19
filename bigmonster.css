@@ -435,6 +435,7 @@ padding-left: 4px;
     margin: 5px;
     perspective: 1000px;
     flex-wrap: wrap;
+    transition: width 1s, left 1s;
 }
 
 .medal_area_inner {
@@ -467,9 +468,9 @@ padding-left: 4px;
     transform: rotateY(180deg);
 }
 
-.medal_group {
+.medal-group {
     position: relative;
-    width: 150px;
+    width: 128px;
     margin-right: 10px;
 }
 
@@ -481,13 +482,30 @@ padding-left: 4px;
 
 #medals > div.medal-group > div.bottom-level {
     display: inline-flex;
-    position: absolute;
-    top: 0;
-    left: 0;
 }
 
 #medals > div.medal-group > div.bottom-level > div.medal {
     filter: sepia(100%);
+}
+
+#medals > div.medal-group.bottom_only {
+    width: 100px;
+    left: 15px;
+}
+
+#medals > div.medal-group.bottom_only > div.bottom-level > div.second {
+    left: -50px;
+}
+#medals > :not(div.bottom_only) > div.bottom-level {
+    filter: brightness(80%);
+}
+
+#medals > :not(div.bottom_only) > div.bottom-level > div.medal_area_inner.second {
+    left: -10px;
+}
+
+#medals > :not(div.bottom_only) > div.bottom-level > div.medal_area_inner {
+    left: 20px;
 }
 
 .medal {
