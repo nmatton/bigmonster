@@ -47,7 +47,7 @@ $machinestates = array(
         "type" => "multipleactiveplayer",
         "possibleactions" => array( "selectStartingExplorer" ),
         "transitions" => array( "newRound" => 4 , "var_newTurn" => 10),
-        "action" => "st_explorerSelection",
+        "action" => "st_MultiPlayerInit",
         "args" => "argexplorerSelection"
     ),
 

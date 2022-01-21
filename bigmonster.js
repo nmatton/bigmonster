@@ -222,76 +222,7 @@ function (dojo, declare) {
 
             // ** SCORING BOARD SETUP ** //
             if (this.isTeamPlay && this.team_defined) {
-                // setup score board for teams
-                this.teams_ordered = [];
-                 this.teams_values.forEach(element => {
-                    this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
-                });
-                // add line below on indiv score row
-                dojo.query('#scoring-row-total').addClass('line-below')
-                // insert team names row (just under the names)
-                var table = document.getElementById("scoretable");
-                var row = table.insertRow(1);
-                row.setAttribute('id','team-title');
-                row.setAttribute('class','line-below');
-                var cell = row.insertCell(-1);
-                cell.setAttribute('class','first-column');
-                cell.innerHTML='TEAMS';
-                for (var team in this.teams_ordered) {
-                    var teamno = 1;
-                    for (var pid in this.teams_ordered[team]) {
-                        player_id = this.teams_ordered[team][pid];
-                        var player = gamedatas.players[player_id];
-                        let splitPlayerName = '';
-                        let chars = player.name.split("");
-                        for (let i in chars) {
-                        splitPlayerName += `<span>${chars[i]}</span>`;
-                        }
-                        if (teamno == 2 && team != this.teams_ordered.length-1) {
-                            $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" class="teamsplit" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
-                        
-                            $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}" class="teamsplit"></td>`;
-                            $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}" class="teamsplit"></td>`;
-
-                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}" class='teamsplit'></td>`;
-                        } else {
-
-                            $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
-                            
-                            $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}"></td>`;
-                            $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}"></td>`;
-                            $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}"></td>`;
-                            $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}"></td>`;
-                            $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}"></td>`;
-                            $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}"></td>`;
-                            $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}"></td>`;
-                            $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}"></td>`;
-
-                            $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}"></td>`;
-                        }
-                        teamno += 1;
-                    }
-                    if (team != this.teams_ordered.length-1) {
-                        $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}" class='teamsplit'></td>`;
-                    } else {
-                        $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}"></td>`;
-
-                    }
-                    let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
-                    let tbDiv = this.format_block('jstpl_team_banner', {
-                        color : '#'+team_color,
-                        team_nr: toint(team) + 1
-                    });
-                    var cell = row.insertCell();
-                    cell.setAttribute('colspan',"2");
-                    cell.innerHTML = tbDiv;
-                }
+                this.setTeamsScoringBoard();
             } else if (!this.isTeamPlay) {
                 // setup score board for indivudual play
                 for( var player_id in gamedatas.players )
@@ -330,6 +261,9 @@ function (dojo, declare) {
                 $('scoring-row-medal').innerHTML += `<td></td>`;
                 
                 $('scoring-row-total').innerHTML += `<td></td>`;
+
+                // remove the "team score total" row as it is individual play
+                dojo.destroy('scoring-row-teamtotal');
             }
             // **** TILES AND HAND MANAGEMENT **** //
             if (!this.isSpectator) {
@@ -641,8 +575,11 @@ function (dojo, declare) {
            */
            
             case 'explorerSelection':
-                explorers = args.args['_private'];
+                console.log(args);
+                explorers = args.args['_private']['explorers'];
                 if (!this.isReadOnly() || g_archive_mode) {
+                    // show a popup for selecting explorer
+                    // active only for players (not for spectators)
                     if (explorers.length == 2 || g_archive_mode) {
                         // only process when choice is still possible (if length < 2, it means that the player already made its choice)
                         popupcontent = '<div id="bm_popup" class ="bm_popin"><h2 id="popin_playersHelp_title" class="bm_popin_title">'+_('Select a starting explorer')+'</h2><div id="selectingExploDiv">'
@@ -661,6 +598,92 @@ function (dojo, declare) {
                             this.possible_explorers.push(explo_id);
                         }
                     }
+                }
+                // if team mode, add the team specific assets
+                if (this.isTeamPlay && !this.team_ui_setup) {
+                    // add the scroll areas (where tiles are displayed) + banner on player miniboard
+                    this.teams = args.args['_private']['team'];
+                    this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
+                    console.log('teams', this.teams);
+                    this.team_ui_setup = true;
+                    player_team = this.teams[this.currentPlayer];
+                    console.log('player_team', player_team);
+                    for (var t of  Object.keys(this.gamedatas.players)) {
+                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
+                    }
+                    this.teams_ordered = [];
+                    this.teams_values.forEach(element => {
+                        this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
+                    });
+                    console.log('teams_ordered', this.teams_ordered);
+                    if (this.isSpectator) {
+                        for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--)
+                            dojo.place( Object.keys(this.gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                        for (o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
+                            dojo.place( Object.keys(this.gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                            if ( Object.keys(this.gamedatas.players)[o] == this.currentPlayer)
+                                break
+                        }
+                    } else {
+                        dojo.query('.player_info_team').style('display','block')
+                        // start by placing other teams
+                        for (const team in this.teams_ordered) {
+                            if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
+                                console.log('processing team '+ team);
+                                const team_members = this.teams_ordered[team];
+                                console.log('team_members '+ team_members);
+                                team_members.forEach(e => {
+                                    if (team != player_team) {
+                                        console.log('placing team '+ team + ' for player '+ e);
+                                        let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                                        dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
+                                        dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
+                                        $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
+                                        // add banner on player miniboard
+                                        let tbDiv = this.format_block('jstpl_team_banner', {
+                                            color : '#'+team_color,
+                                            team_nr: toint(team) + 1
+                                        });
+                                        player_board = $('player_board_'+e)
+                                        dojo.place( tbDiv , player_board);
+                                    }
+        
+                                });
+                            }
+                        }
+                        // place current player scroll area
+                        console.log('placing current player '+ this.currentPlayer);
+                        let team_color = this.gamedatas["players"][this.teams_ordered[player_team][0]]['color']
+                        let teammate = this.getOtherTeamMember(this.teams, player_team, this.currentPlayer)
+                        dojo.place(this.player_id + "_scrollmap_wrapper", "Boards", "after"); // place current player's scroll area just after Boards
+                        // styling current player scroll area
+                        dojo.style(this.player_id+'_team_info','background-color','#'+team_color);
+                        $(this.player_id + '_team_info').innerHTML='TEAM ' + (toint(player_team) + 1); // set the team name
+                        // add banner on player miniboard
+                        let tbDiv = this.format_block('jstpl_team_banner', {
+                            color : '#'+team_color,
+                            team_nr: toint(player_team) + 1
+                        });
+                        player_board = $('player_board_'+this.player_id)
+                        dojo.place( tbDiv , player_board);
+
+                        // place other teams player's scroll areas just after current player's scroll area
+                        console.log('placing other teams player scroll areas');
+                        dojo.place(teammate + "_scrollmap_wrapper", this.player_id + "_scrollmap_wrapper", "after");
+                        dojo.style(teammate+'_team_info','background-color','#'+team_color);
+                        $(teammate + '_team_info').innerHTML='TEAM ' + (toint(player_team) + 1); // set the team name
+                        // add banner on player miniboard
+                        player_board = $('player_board_'+teammate)
+                        dojo.place( tbDiv , player_board);
+                        
+                    }
+                    for (var t of Object.keys(this.gamedatas.players)) {
+                        if (this.boards.includes(t)) {
+                            this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                        }
+                    }
+                    // set the scoring table
+                    this.setTeamsScoringBoard();
                 }
                 break;
             
@@ -966,6 +989,79 @@ function (dojo, declare) {
         isReadOnly() {
             return this.isSpectator || typeof g_replayFrom != 'undefined' || g_archive_mode;
             },
+
+        setTeamsScoringBoard() {
+            // setup score board for teams
+            this.teams_ordered = [];
+            this.teams_values.forEach(element => {
+               this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
+            });
+            // add line below on indiv score row
+            dojo.query('#scoring-row-total').addClass('line-below')
+            // insert team names row (just under the names)
+            var table = document.getElementById("scoretable");
+            var row = table.insertRow(1);
+            row.setAttribute('id','team-title');
+            row.setAttribute('class','line-below');
+            var cell = row.insertCell(-1);
+            cell.setAttribute('class','first-column');
+            cell.innerHTML='TEAMS';
+            for (var team in this.teams_ordered) {
+                var teamno = 1;
+                for (var pid in this.teams_ordered[team]) {
+                    player_id = this.teams_ordered[team][pid];
+                    var player = this.gamedatas.players[player_id];
+                    let splitPlayerName = '';
+                    let chars = player.name.split("");
+                    for (let i in chars) {
+                    splitPlayerName += `<span>${chars[i]}</span>`;
+                    }
+                    if (teamno == 2 && team != this.teams_ordered.length-1) {
+                        $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" class="teamsplit" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+                    
+                        $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}" class="teamsplit"></td>`;
+                        $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}" class="teamsplit"></td>`;
+
+                        $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}" class='teamsplit'></td>`;
+                    } else {
+
+                        $('scoring-row-players').innerHTML += `<td><span id="scoring-row-name-p${player_id}" style="color:#${player.color};"><span>${splitPlayerName}</span></span></td>`;
+                        
+                        $('scoring-row-ice').innerHTML += `<td id="scoring-row-ice-p${player_id}"></td>`;
+                        $('scoring-row-bigmonster').innerHTML += `<td id="scoring-row-bigmonster-p${player_id}"></td>`;
+                        $('scoring-row-lava').innerHTML += `<td id="scoring-row-lava-p${player_id}"></td>`;
+                        $('scoring-row-grassland').innerHTML += `<td id="scoring-row-grassland-p${player_id}"></td>`;
+                        $('scoring-row-swamp').innerHTML += `<td id="scoring-row-swamp-p${player_id}"></td>`;
+                        $('scoring-row-diamonds').innerHTML += `<td id="scoring-row-diamonds-p${player_id}"></td>`;
+                        $('scoring-row-explorer').innerHTML += `<td id="scoring-row-explorer-p${player_id}"></td>`;
+                        $('scoring-row-medal').innerHTML += `<td id="scoring-row-medal-p${player_id}"></td>`;
+
+                        $('scoring-row-total').innerHTML += `<td id="scoring-row-total-p${player_id}"></td>`;
+                    }
+                    teamno += 1;
+                }
+                if (team != this.teams_ordered.length-1) {
+                    $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}" class='teamsplit'></td>`;
+                } else {
+                    $('scoring-row-teamtotal').innerHTML += `<td colspan="2" id="scoring-row-team-t${team}"></td>`;
+
+                }
+                let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                let tbDiv = this.format_block('jstpl_team_banner', {
+                    color : '#'+team_color,
+                    team_nr: toint(team) + 1
+                });
+                var cell = row.insertCell();
+                cell.setAttribute('colspan',"2");
+                cell.innerHTML = tbDiv;
+            }
+        },
         
         tileHtml: function(e, id, s, t, b=0, i=0, m=0) {
             /* 
@@ -1453,8 +1549,7 @@ function (dojo, declare) {
                 this.gamedatas.gamestate.description = this.gamedatas.gamestate['description' + suffix];
             this.updatePageTitle();
         },
-        ///////////////////////////////////////////////////
-        //// Player's action
+        //** Player's action
         
         /*
         
@@ -2176,12 +2271,18 @@ function (dojo, declare) {
                     dojo.place( this.format_block('jstpl_back_medal', {medal_id : s.medal_id, back_id : s.back_id} ), mia_div );
                 }, duration+delay+10);
             }
+            if (this.isTeamPlay && s.medal_id <= 10) {
+                // top medal is won -> add the bottom_only class to the medal group
+                dojo.addClass( 'group_'+s.medal_id, 'bottom_only' );
+
+            }
         },
 
         notif_scoreUpdate : function (notif) {
             var s = notif.args;
             this.scoreCtrl[ s.player_id ].incValue( s.score_delta );
-        }
+        },
+
 
 
    });             

@@ -30,6 +30,7 @@ html {
     background-attachment: fixed;
 }
 
+
 /** Scrollable area **/
 .scrollBoards {
     display: flex;
@@ -428,6 +429,8 @@ padding-left: 4px;
         margin-top: 0px;
         margin-bottom: 0px;
     min-height: 130px;
+    display: flex;
+    align-items: center;
 }
 
 .medal_area {
@@ -472,11 +475,12 @@ padding-left: 4px;
     position: relative;
     width: 128px;
     margin-right: 10px;
+    margin-top: 5px;
 }
 
 #medals > div.medal-group > div.top-level {
     position: absolute;
-    left: 50px;
+    left: 27px;
     z-index: 5;
 }
 
@@ -490,7 +494,6 @@ padding-left: 4px;
 
 #medals > div.medal-group.bottom_only {
     width: 100px;
-    left: 15px;
 }
 
 #medals > div.medal-group.bottom_only > div.bottom-level > div.second {
@@ -501,12 +504,9 @@ padding-left: 4px;
 }
 
 #medals > :not(div.bottom_only) > div.bottom-level > div.medal_area_inner.second {
-    left: -10px;
+    left: -27px;
 }
 
-#medals > :not(div.bottom_only) > div.bottom-level > div.medal_area_inner {
-    left: 20px;
-}
 
 .medal {
     position: absolute;
@@ -747,7 +747,7 @@ justify-content: space-between; */
 	top: 40%;
 	height: auto;
     width: 90%;
-    max-width: 480px;
+    max-width: 463px;
 	margin: -100px -150px;
 	z-index: 10;
 }
@@ -898,10 +898,9 @@ cursor: pointer; }
     height: 100%; }
 
 .bm_popin {
-width: auto;
-position: relative;
 background: url("img/background_help.jpg");
 background-size: contain;
+background-position: center;
 padding: 10px 15px;
 border-radius: 8px;
 border: 3px solid #6a5a9d;
@@ -1195,12 +1194,16 @@ background-size: 1180%;
   @keyframes space {
       40% {
           opacity: 0.75;
+          left:-20px;
+          top:-10px;
       }
       50% {
           opacity: 0.25;
       }
       60% {
           opacity: 0.75;
+          left:20px;
+          top:10px;
       }
       100% {
           transform: rotate(360deg);
@@ -1210,12 +1213,16 @@ background-size: 1180%;
   @keyframes space2 {
       40% {
           opacity: 0.75;
+          left:20px;
+          top:10px;
       }
       50% {
           opacity: 0.25;
       }
       60% {
           opacity: 0.75;
+          left:-20px;
+          top:-10px;
       }
       100% {
           transform: rotate(-360deg);

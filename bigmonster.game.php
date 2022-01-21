@@ -437,27 +437,11 @@ class BigMonster extends Table
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
     }
 
-    public function test_sql($card_id)
-    {
-        $sql = "SELECT mutation FROM card WHERE card_id = $card_id";
-        print_r(self::getCollectionFromDb( $sql ));
-    }
-
-    public function test_sqlupdate($player_id)
-    {
-        $ids = array_values($this->multi_array_search($this->dbcard, array('card_location' => 'board','card_location_arg' => $player_id)));
-        print_r($ids);  
-    }
-
     public function test()
     {
-        // double mutagen
-        //$this->check_mutation(array(2,2), array('card_type_arg'=>1),2356488);
-        // simple mutagen
-        $res=$this->cards->countCardsByLocationArgs( 7 );
-        print_r($res);
-        $res2 = $this->custcountCardsByLocationArgs(7);
-        print_r($res2);
+        $sql = "SELECT COUNT(player_id) c FROM player WHERE player_is_multiactive='1'";
+        $res = self::getUniqueValueFromDB($sql);
+        return ($res == 1);
 
     }
 
@@ -507,6 +491,12 @@ class BigMonster extends Table
         return $result;
     }
 
+
+    public function isLastPlayerFinished()
+    {
+        // return true if all players except one have finished their turn
+        return count($this->gamestate->getActivePlayerList()) == 1;
+    }
     // DECK-custom functions using local DB data
 
     public function custgetCardsOfTypeInLocation($type, $type_arg=null, $location, $location_arg = null)
@@ -596,10 +586,14 @@ class BigMonster extends Table
         }
     }
 
-    function get_teams()
+    function get_teams($updatedb=false)
     {
         // return array of players and their team
         // example : Array ( [2356487] => 0 [2356488] => 1 [2356486] => 1 [2356482] => 0 )
+        if ($updatedb) {
+            $sql = 'SELECT * FROM player';
+            $this->dbplayer = self::getCollectionFromDb($sql);
+        }
         return array_column($this->dbplayer,'team','player_id');
     }
 
@@ -1794,7 +1788,55 @@ class BigMonster extends Table
         self::checkAction( 'selectTeam' );
         $sql = "UPDATE player SET team_sel = $team_player_id WHERE player_id = $player_id";
         self::DbQuery($sql);
-        $this->gamestate->setPlayerNonMultiactive($player_id, 'explorerSelection');
+        if ($this->isLastPlayerFinished() and $this->isTeamPlay()) { 
+            $sql = "SELECT player_id pid, team_sel ts FROM player";
+            $team_choices_raw = self::getCollectionFromDB( $sql );
+            $team_choices = array();
+            foreach ($team_choices_raw as $key => $value)
+            {
+                $team_choices[$key] = $value['ts'];
+            }
+            // $team_choices is array with player_id as key and its choice as value
+            if(count(array_unique($team_choices))<count($team_choices)){
+                // there are/is duplicate(s) to fix (multiple player has chosen the same player to team with)
+                $teams = [];
+                $not_teamed = [];
+                foreach ($team_choices as $pid => $tm) {
+                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
+                        $teams[$pid] = [$pid,$tm];
+                    } elseif ($pid != $team_choices[$tm]) {
+                        $not_teamed[] = $pid;
+                    }
+                }
+                for ($i=0; $i < count($not_teamed); $i+=2) { 
+                    $teams[$not_teamed[$i]] = [$not_teamed[$i],$not_teamed[$i+1]];
+                }
+                // teams is now the final attribution : array of key 0..1 (or 0..2 at 6 players)
+                $final_team_choices = array_values($teams);
+            } else {
+                // no duplicates
+                $teams = array();
+                foreach ($team_choices as $pid => $tm)
+                {
+                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
+                        $teams[$pid] = [$pid,$tm];
+                    }
+                }
+                $final_team_choices = array_values($teams); // reset keys to range from 0 to 1 (or 3 if 6 players mode)
+            }
+            // record to DB team association
+            foreach ($final_team_choices as $team => $players) {
+                foreach ($players as $player) {
+                    $sql = "UPDATE player SET team = $team WHERE player_id = $player";
+                    self::DbQuery( $sql );
+                }
+            }
+            self::setGameStateValue( 'teamdefined', 1 );
+            $this->gamestate->setPlayerNonMultiactive($player_id, 'explorerSelection');
+        }
+        else {
+            $this->gamestate->setPlayerNonMultiactive($player_id, 'explorerSelection');
+        }
     }
 
     function selectStartingExplorer($explorer_id)
@@ -2015,14 +2057,17 @@ class BigMonster extends Table
         $sql = "SELECT player_id, GROUP_CONCAT( explorer_id ) AS 'explorer_id' FROM explorers WHERE selected = 0 GROUP BY player_id";
         $explorers_attr = self::getCollectionFromDB( $sql );
         $data = array('_private'=>array());
+        if ($this->isTeamPlay()) {
+            $team = $this->get_teams(true);
+        }
         foreach ($explorers_attr as $player_id  => $explorer_id) {
             $explo_ids = explode(",", $explorer_id['explorer_id']);
-            for ($i=0; $i < count($explo_ids) ; $i++) { 
-                $data['_private'][$player_id][$i] = array(  'explorer_id' => $explo_ids[$i],
-                                                            'explorer_info' => $this->explorer_infos[$explo_ids[$i]]['descr']);
+            for ($i=0; $i < count($explo_ids) ; $i++) {
+                $data['_private'][$player_id]['explorers'][$i] = array(  'explorer_id' => $explo_ids[$i],
+                'explorer_info' => $this->explorer_infos[$explo_ids[$i]]['descr']);
             }
+            $data['_private'][$player_id]['team'] =$team;
         }
-        //var_dump($data);
         return $data;
     }
 
@@ -2176,59 +2221,6 @@ class BigMonster extends Table
             $this->gamestate->nextState( 'explorerSelection' );
         }
     }
-
-    function st_explorerSelection()
-    {
-        if ($this->isTeamPlay()) {
-            // check team selection and associate player on teams
-            // retrieve player choices
-            $sql = "SELECT player_id pid, team_sel ts FROM player";
-            $team_choices_raw = self::getCollectionFromDB( $sql );
-            $team_choices = array();
-            foreach ($team_choices_raw as $key => $value)
-            {
-                $team_choices[$key] = $value['ts'];
-            }
-            // $team_choices is array with player_id as key and its choice as value
-            if(count(array_unique($team_choices))<count($team_choices)){
-                // there are/is duplicate(s) to fix (multiple player has chosen the same player to team with)
-                $teams = [];
-                $not_teamed = [];
-                foreach ($team_choices as $pid => $tm) {
-                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
-                        $teams[$pid] = [$pid,$tm];
-                    } elseif ($pid != $team_choices[$tm]) {
-                        $not_teamed[] = $pid;
-                    }
-                }
-                for ($i=0; $i < count($not_teamed); $i+=2) { 
-                    $teams[$not_teamed[$i]] = [$not_teamed[$i],$not_teamed[$i+1]];
-                }
-                // teams is now the final attribution : array of key 0..1 (or 0..2 at 6 players)
-                $final_team_choices = array_values($teams);
-            } else {
-                // no duplicates
-                $teams = array();
-                foreach ($team_choices as $pid => $tm)
-                {
-                    if ($pid == $team_choices[$tm] and !in_array($pid,$this->array_flatten($teams)) and !in_array($tm,$this->array_flatten($teams))) {
-                        $teams[$pid] = [$pid,$tm];
-                    }
-                }
-                $final_team_choices = array_values($teams); // reset keys to range from 0 to 1 (or 3 if 6 players mode)
-            }
-            // record to DB team association
-            foreach ($final_team_choices as $team => $players) {
-                foreach ($players as $player) {
-                    $sql = "UPDATE player SET team = $team WHERE player_id = $player";
-                    self::DbQuery( $sql );
-                }
-            }
-            self::setGameStateValue( 'teamdefined', 1 );
-        }
-        $this->gamestate->setAllPlayersMultiactive();
-    }
-
 
     function st_newRound()
     {
@@ -2396,6 +2388,23 @@ class BigMonster extends Table
             if (intval($medal_details['player_id']) === 0 and $medal_details['type'] != 'lowest') {
                 // medal not yet attributed to a player and not the medal attributed at the end of the game
                 $sucess_player_id = '';
+                if ($medal_id > 10) {
+                    // team medal -- only process if indiv medal is attributed
+                    if ($medals_info[floor($medal_id/10)]['player_id'] !== 0) {
+                        foreach (array_unique(array_values($medals_info )) as $team ) {
+                            if ($this->checkMedalSuccess(floor($medal_id/10), 0, false, $team)) {
+                                $team_player_ids = $this->getTeamPlayers($team);
+                                if ($medal_id % 10 == 1) {
+                                    // attribute to the first player of the team the medal ending by 1 (31,41,51,...)
+                                    $sucess_player_id .= strval($team_player_ids[0]).',';
+                                } else {
+                                    // attribute to the first player of the team the medal ending by 2 (32,42,52,...)
+                                    $sucess_player_id .= strval($team_player_ids[1]).',';
+                                }
+                            }
+                        }
+                    }
+                }
                 foreach ($players as $player_id => $player) {
                     if ($this->checkMedalSuccess($medal_details['medal_id'], $player_id)) {
                         $sucess_player_id .= strval($player_id).',';
@@ -2407,9 +2416,14 @@ class BigMonster extends Table
                     $list_players = explode(',', $list_players_str);
                     $this->setMedalAttribution($list_players_str, $medal_details['medal_id']);
                     foreach ($list_players as $player_id) {
+                        if ($medal_id > 10) {
+                            $medal_name = $this->medals_infos[$medal_details['medal_id']]['name_team'];
+                        } else {
+                            $medal_name = $this->medals_infos[$medal_details['medal_id']]['name'];
+                        }
                         self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} won the  "${medal_name}" medal (${pts} points)!'), array(
                             "player_name" => self::getPlayerNameById($player_id),
-                            "medal_name" => $this->medals_infos[$medal_details['medal_id']]['name'],
+                            "medal_name" => $medal_name,
                             "player_id" => $player_id,
                             "medal_id" => $medal_id,
                             "pts" => $this->medals_infos[$medal_details['medal_id']]['pts'],
