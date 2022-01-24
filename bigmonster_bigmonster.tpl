@@ -165,7 +165,7 @@ var jstpl_medal_player_stock = '<div class="medal_area_inner" id="stock_${medal_
     <div id="back_medal_${medal_id}" class="back_medal" data-id="${back_id}"></div>\
     </div>';
 var jstpl_back_medal = '<div class="back_medal" id="medal_${medal_id}"" data-id="${back_id}"></div>';
-var jstpl_front_medal = '<div id="medal_${medal_id}_${type}" class="medal" medal-id="${medal_id}" medal-type="${type}"></div>';
+var jstpl_front_medal = '<div id="medal_${medal_id}_${type}" class="medal" medal-id="${data_id}" medal-type="${type}"></div>';
 var jstpl_medal_group ='<div class="medal-group" id="group_${medal_group}"><div class="top-level" id="top_${medal_group}"></div><div class="bottom-level" id="bottom_${medal_group}"></div></div>';
 var jstpl_helpIcon = `
 <div id='help-icon'>

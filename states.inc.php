@@ -36,7 +36,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must choose your team'),
         "type" => "multipleactiveplayer",
         "possibleactions" => array( "selectTeam" ),
-        "transitions" => array( "explorerSelection" => 3, "gameEnd" => 99),
+        "transitions" => array( "explorerSelection" => 3, "pregameEnd" => 98),
         "action" => "st_teamSelection"
     ),
 

@@ -80,25 +80,22 @@ function (dojo, declare) {
             if (!this.isTeamPlay) {
                 // individual game setup
                 console.log('create scroll areas for individual game');
+                for (var t of  Object.keys(gamedatas.players)) {
+                    this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
+                }
                 if (this.isSpectator) {
-                    for (var t of  Object.keys(gamedatas.players)) {
-                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
-                    }
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
-                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap_wrapper", "Boards", "after");
                     for (o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
-                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
+                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap_wrapper", "Boards", "after");
                         if ( Object.keys(gamedatas.players)[o] == this.currentPlayer)
                             break
                     }
                 } else {
-                    for (var t of gamedatas.playerorder) {
-                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
-                    }
                     for (var o = gamedatas.playerorder.length - 1; o >= 0; o--)
-                        dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
+                        dojo.place(gamedatas.playerorder[o] + "_scrollmap_wrapper", "Boards", "after");
                     for (o = gamedatas.playerorder.length - 1; o >= 0; o--) {
-                        dojo.place(gamedatas.playerorder[o] + "_scrollmap", "Boards", "after");
+                        dojo.place(gamedatas.playerorder[o] + "_scrollmap_wrapper", "Boards", "after");
                         if (gamedatas.playerorder[o] == this.currentPlayer)
                             break
                     }
@@ -128,11 +125,9 @@ function (dojo, declare) {
                     // start by placing other teams
                     for (const team in this.teams_ordered) {
                         if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
-                            console.log(team);
                             const team_members = this.teams_ordered[team];
                             team_members.forEach(e => {
                                 if (team != this.player_team) {
-                                    console.log('placing player '+ e +' from team ' + team + ' in scroll area');
                                     let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
                                     dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
                                     dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
@@ -678,7 +673,7 @@ function (dojo, declare) {
                         
                     }
                     for (var t of Object.keys(this.gamedatas.players)) {
-                        if (this.boards.includes(t)) {
+                        if (this.boards[t]) {
                             this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
                         }
                     }
@@ -1997,6 +1992,7 @@ function (dojo, declare) {
 
         notif_updateHand : function (notif)
         {
+            console.log('updateHand', notif)
             var s = notif.args;
             var cards = s.cards;
             var delay = 10;
@@ -2097,6 +2093,7 @@ function (dojo, declare) {
                 // remove the callable mouse pointer of the ship where tile was moved to + add the ship to the list of busyships
                 dojo.removeClass("ship_"+s.player_ship_id, 'bm_selectable')
                 this.busyShips.push(toint(s.player_ship_id));
+                // add back the buttons on the top bar
             }
             var items = this.playerHand.getSelectedItems();
             if (items.length > 0) {
@@ -2109,7 +2106,8 @@ function (dojo, declare) {
                         dojo.removeClass( 'SelConfbutton', 'disabled');
                     }
                 } else {
-                    this.activateShips();
+                    console.log('activating ships in 5 secs')
+                    setTimeout(this.activateShips(),5000);
                 }
             }
 
@@ -2118,7 +2116,6 @@ function (dojo, declare) {
 
         notif_ReplayTileSelected : function (notif) {
             var s = notif.args
-            console.log(s);
             if (isReadOnly()) {
                 this.playerHand.selectItem( s.card_id );
             }
@@ -2173,6 +2170,7 @@ function (dojo, declare) {
 
         notif_muted_monster : function (notif)
         {
+            console.log(notif)
             var s = notif.args
             if (notif.bIsTableMsg) {
                 // public notification
@@ -2205,6 +2203,7 @@ function (dojo, declare) {
         notif_playedTiles : function (notif)
         {
             var s = notif.args
+            console.log(notif)
             // skip when it's the player's board
             if (this.player_id != s.player_id || g_archive_mode || typeof g_replayFrom != 'undefined') {
                 // tile played by other player -> add it to its board
@@ -2226,6 +2225,7 @@ function (dojo, declare) {
                     let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
                     tilerow.removeFromStockById( s.card_id );
                 } else {
+                    console.log('removing from hand tile '+s.card_id);
                     this.playerHand.removeFromStockById( s.card_id );
                 }
             }
@@ -2238,6 +2238,7 @@ function (dojo, declare) {
         },
 
         notif_wonMedal : function (notif) {
+            console.log(notif)
             var s = notif.args;
             var delay = 10;
             var duration = 3000;
@@ -2254,13 +2255,16 @@ function (dojo, declare) {
                 var position = 'last'
             }
             dojo.place( miaDiv, target, position );
+            medal_team_id = (s.medal_id > 10) ? 2 : 1;
             if (!this.medals_status[s.medal_id]) {
-                this.slideToObjectRelative( "medal_" + s.medal_id + "_" + this.game_mode, "mia_" + s.player_id+"_"+s.medal_id, duration, delay, 'first', this.addBackMedal(s.medal_id, s.back_id, s.player_id, duration+delay) );
+                this.slideToObjectRelative( "medal_" + s.medal_id + "_" + medal_team_id, "mia_" + s.player_id+"_"+s.medal_id, duration, delay, 'first', this.addBackMedal(s.medal_id, s.back_id, s.player_id, duration+delay) );
                 this.medals_status[s.medal_id] = true;
             } else {
+                let info_id = toint((s.medal_id>10) ? Math.floor(s.medal_id/10):s.medal_id);
                 let tmp_medal = this.format_block('jstpl_front_medal', {
                     medal_id : s.medal_id,
-                    type : this.game_mode,
+                    data_id: info_id,
+                    type : medal_team_id,
                     player_id : s.player_id,
                 });
                 let mia_div = 'mia_'+s.player_id+'_'+s.medal_id;
