@@ -62,7 +62,26 @@ function (dojo, declare) {
             
             "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
         */
-        
+            setLoader(value, max) {
+                this.inherited(arguments);
+                if (!this.isLoadingComplete && value >= 100) {
+                  this.isLoadingComplete = true;
+                  this.onLoadingComplete();
+                }
+              },
+          
+              onLoadingComplete() {
+                console.log('Loading complete');
+                 if (this.hidescore) {
+                    console.log(this.gamedatas.players)
+                    for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
+                        pid = Object.keys(this.gamedatas.players)[o];
+                        console.log(pid)
+                        $('player_score_' + pid).innerHTML='?';
+                        this.addTooltip( 'player_score_' + pid, _('live score is hidden by table option'), '', 10 )
+                    }
+                } 
+              },
         setup: function( gamedatas )
         {
             console.log(gamedatas);
@@ -77,12 +96,6 @@ function (dojo, declare) {
             this.nums_of_players = Object.keys(gamedatas.players).length;
             this.boards = [];
             this.hidescore = gamedatas.hidescore;
-            if (this.hidescore) {
-                // replace scores by '?' if option is set
-                for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
-                    $('player_score_' + o).innerHTML='?';
-                    this.addTooltip( 'player_score_' + o, _('live score is hidden by table option'), '', 10 )
-            }
             centerscroll = false;
             if (!this.isTeamPlay) {
                 // individual game setup
@@ -948,6 +961,26 @@ function (dojo, declare) {
             script.
         
         */
+
+
+/*          setLoader(value, max) {
+            this.inherited(arguments);
+            if (!this.isLoadingComplete && value >= 100) {
+                this.isLoadingComplete = true;
+                this.onLoadingComplete();
+            }
+        }, */
+        
+        /* onLoadingComplete() {
+            console.log('onLoadingComplete');
+            if (this.hidescore) {
+                for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--)
+                    $('player_score_' + o).innerHTML='?';
+                    this.addTooltip( 'player_score_' + o, _('live score is hidden by table option'), '', 10 )
+                }
+            }
+        },  */
+
 
         rearrange_medals() {
             let groups = dojo.query('.medal-group');
