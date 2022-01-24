@@ -703,6 +703,12 @@ padding-left: 4px;
 .hidden_pos {
     opacity: 0;
 }
+
+.selected_pos {
+    border: 1px solid red;
+    box-shadow: red 0px 0px 16px 1px inset;
+}
+
 /** back side of tile **/
 
 .backtile{

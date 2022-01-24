@@ -14,6 +14,8 @@
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
  */
+ var isDebug = window.location.host == 'studio.boardgamearena.com' || window.location.hash.indexOf('debug') > -1;
+ var debug = isDebug ? console.info.bind(window.console) : function () {};
 
 define([
     "dojo","dojo/_base/declare",
@@ -85,6 +87,8 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log(gamedatas);
+            // Create a new div for buttons to avoid BGA auto clearing it
+            dojo.place("<div id='customActions' style='display:inline-block'></div>", $('generalactions'), 'after');
             this.isTeamPlay = gamedatas.isTeamPlay;
             if (this.isTeamPlay) this.game_mode = 2;
             this.teams = gamedatas.teams;
@@ -935,7 +939,7 @@ function (dojo, declare) {
 */
                     case 'placeTile':
                         if (this.tile_selected) {
-                            this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton' );
+                            this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton', 'customActions' );
                         }
                         break;
                     case 'teamSelection' :
@@ -943,7 +947,7 @@ function (dojo, declare) {
                             console.log(this.gamedatas)
                             Object.values(this.gamedatas.playerorder).forEach(t => {
                                 if (t != this.player_id) {
-                                    this.addActionButton('buttonSelectPlayer' + t, this.coloredPlayerName(this.gamedatas.players[t].name), () => this.selectTeamPlayer(t));
+                                    this.addActionButton('buttonSelectPlayer' + t, this.coloredPlayerName(this.gamedatas.players[t].name), () => this.selectTeamPlayer(t), 'customActions');
                                 }
                             })
                         }
@@ -962,25 +966,54 @@ function (dojo, declare) {
         
         */
 
+        /*
+        * Add a timer on an action button :
+        * params:
+        *  - buttonId : id of the action button
+        *  - time : time before auto click
+        *  - pref : 0 is disabled (auto-click), 1 if normal timer, 2 if no timer and show normal button
+        */
 
-/*          setLoader(value, max) {
-            this.inherited(arguments);
-            if (!this.isLoadingComplete && value >= 100) {
-                this.isLoadingComplete = true;
-                this.onLoadingComplete();
+        startActionTimer(buttonId, time, pref, autoclick = false) {
+            var button = $(buttonId);
+            var isReadOnly = this.isReadOnly();
+            console.log($(buttonId));
+            if (button == null || isReadOnly || pref == 2) {
+                debug('Ignoring startActionTimer(' + buttonId + ')', 'readOnly=' + isReadOnly, 'prefValue=' + pref);
+                return;
             }
-        }, */
-        
-        /* onLoadingComplete() {
-            console.log('onLoadingComplete');
-            if (this.hidescore) {
-                for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--)
-                    $('player_score_' + o).innerHTML='?';
-                    this.addTooltip( 'player_score_' + o, _('live score is hidden by table option'), '', 10 )
-                }
+    
+            // If confirm disabled, click on button
+            if (pref == 0) {
+            if (autoclick) button.click();
+            return;
             }
-        },  */
-
+    
+            this._actionTimerLabel = button.innerHTML;
+            this._actionTimerSeconds = time;
+            this._actionTimerFunction = () => {
+            var button = $(buttonId);
+            if (button == null) {
+                this.stopActionTimer();
+            } else if (this._actionTimerSeconds-- > 1) {
+                button.innerHTML = this._actionTimerLabel + ' (' + this._actionTimerSeconds + ')';
+            } else {
+                debug('Timer ' + buttonId + ' execute');
+                button.click();
+            }
+            };
+            this._actionTimerFunction();
+            this._actionTimerId = window.setInterval(this._actionTimerFunction, 1000);
+            debug('Timer #' + this._actionTimerId + ' ' + buttonId + ' start');
+        },
+    
+        stopActionTimer() {
+            if (this._actionTimerId != null) {
+            debug('Timer #' + this._actionTimerId + ' stop');
+            window.clearInterval(this._actionTimerId);
+            delete this._actionTimerId;
+            }
+        },
 
         rearrange_medals() {
             let groups = dojo.query('.medal-group');
@@ -1230,23 +1263,25 @@ function (dojo, declare) {
                 // expansion to "down" (default)
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
                     // define new position
-                    var pos = [evt.target.dataset.posX, evt.target.dataset.posY];
-                    var ximg = sel_tile.style.backgroundPositionX;
-                    var yimg = sel_tile.style.backgroundPositionY;
-                    dojo.addClass(evt.target, 'bm_tileClass');
-                    dojo.style(evt.target, 'backgroundPositionX', toint(ximg)/2+'px' );
-                    dojo.style(evt.target, 'backgroundPositionY', toint(yimg)+'px');
-                    var otile = '#move_'+toint(pos[0])+'*'+toint(toint(pos[1])+1);
-                    dojo.query(otile).addClass('hidden_pos')
+                    if (!evt.target.classList.value.includes("selected_pos")) {
+                        let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
+                        let ximg = sel_tile.style.backgroundPositionX;
+                        let yimg = sel_tile.style.backgroundPositionY;
+                        dojo.addClass(evt.target, 'bm_tileClass');
+                        dojo.style(evt.target, 'backgroundPositionX', toint(ximg)/2+'px' );
+                        dojo.style(evt.target, 'backgroundPositionY', toint(yimg)+'px');
+                        let otile = '#move_'+toint(pos[0])+'*'+toint(toint(pos[1])+1);
+                        dojo.query(otile).addClass('hidden_pos')
+                    }
                  });
             } else if (d == "U") {
                 // expansion to "up" (need to change position)
                 dojo.addClass($( 'move_'+x+'*'+y+''), 'up');
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
-                    var pos = [evt.target.dataset.posX, evt.target.dataset.posY];
+                    let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
                     dojo.style(evt.target, 'top', toint(pos[1]) * 100/2 - 50 + 'px'); // set new pos for upper expansion
-                    var ximg = sel_tile.style.backgroundPositionX;
-                    var yimg = sel_tile.style.backgroundPositionY;
+                    let ximg = sel_tile.style.backgroundPositionX;
+                    let yimg = sel_tile.style.backgroundPositionY;
                     dojo.addClass(evt.target, 'bm_tileClass');
                     dojo.style(evt.target, 'backgroundPositionX', toint(ximg)/2+'px' );
                     dojo.style(evt.target, 'backgroundPositionY', toint(yimg)+'px');
@@ -1254,11 +1289,16 @@ function (dojo, declare) {
             } else if (d == "R") {
                 // expansion to right
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
-                    var ximg = sel_tile.style.backgroundPositionX;
+                    let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
+                    let ximg = sel_tile.style.backgroundPositionX;
                     if (toint(ximg) == -100) {
                         dojo.addClass(evt.target, 'bm_tileClassH1');
                     } else {
                         dojo.addClass(evt.target, 'bm_tileClassH2');
+                    }
+                    let otile = '#move_'+toint(toint(pos[0])+1)+'*'+toint(toint(pos[1])+0);
+                    if (!evt.target.classList.value.includes("selected_pos")) {
+                        dojo.query(otile).addClass('hidden_pos')
                     }
                     
                  });
@@ -1266,9 +1306,9 @@ function (dojo, declare) {
                 // expansion to left
                 dojo.addClass($( 'move_'+x+'*'+y+''), 'left');
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
-                    var pos = [evt.target.dataset.posX, evt.target.dataset.posY];
+                    let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
                     dojo.style(evt.target, 'left', toint(pos[0]) * 100/2 - 50 + 'px'); // set new pos for left expansion
-                    var ximg = sel_tile.style.backgroundPositionX;
+                    let ximg = sel_tile.style.backgroundPositionX;
                     if (toint(ximg) == -100) {
                         dojo.addClass(evt.target, 'bm_tileClassH1');
                     } else {
@@ -1321,7 +1361,7 @@ function (dojo, declare) {
                     dojo.addClass("ship_" + t,"bm_selectable");
                     // add button on the status bar
                     this.addActionButton('buttonSelectPlayer' + t, this.coloredPlayerName(this.gamedatas.players[t].name), () =>
-                        this.sendCardToShip(t),
+                        this.sendCardToShip(t), 'customActions'
                     );
                     // activate the explorer
                     dojo.addClass('tile_e_' + this.explorers[t]['explorer_id'], 'bm_selectable');
@@ -1626,7 +1666,7 @@ function (dojo, declare) {
                 if (this.checkAction('selectTile', true)) {
                     if (this.lastTurn) {
                         if ($('SelConfbutton') == null) {
-                            this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile' );
+                            this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile' ,'customActions');
                         } else {
                             dojo.removeClass( 'SelConfbutton', 'disabled');
                         }
@@ -1672,7 +1712,7 @@ function (dojo, declare) {
                     if (this.checkAction('var_SelectTile', true) && this.selected_tile_id == 0) {
                         // PLAY CARD SELECTION
                         if ($('TiletoPlaybutton') == null) {
-                            this.addActionButton( 'TiletoPlaybutton', _('Select Tile to Play'), 'onClickSelectTile' );
+                            this.addActionButton( 'TiletoPlaybutton', _('Select Tile to Play'), 'onClickSelectTile','customActions' );
                         }
                         this.tile_selected = true;
                     } else if (this.checkAction('var_SelectTile', true) && this.selected_tile_id > 0) {
@@ -1683,7 +1723,7 @@ function (dojo, declare) {
                             tilerow.unselectAll();
                         } else {
                             if ($('TiletoDiscardbutton') == null) {
-                                this.addActionButton( 'TiletoDiscardbutton', _('Select Tile to Discard'), 'onClickSelectTile' );
+                                this.addActionButton( 'TiletoDiscardbutton', _('Select Tile to Discard'), 'onClickSelectTile','customActions' );
                             }
                             this.tile_selected = true;
                         }
@@ -1801,64 +1841,87 @@ function (dojo, declare) {
 
         onClickPossibleMove: function(s){
             var pos = [s.target.dataset.posX, s.target.dataset.posY];
-            // reset opacity to default
-            dojo.query('.possibleMoveV').removeClass('hidden_pos');
-            dojo.query('.possibleMoveH').removeClass('hidden_pos');
-            if (typeof this.playerHand != "undefined") {
-                // 4+ players mode
-                var tileNum = this.playerHand.items[0].type;
-                var tileId = this.playerHand.items[0].id;
-            } else {
-                // 2-3 players mode
-                let items = (this.active_row == 1) ? this.upper_row.items : this.lower_row.items;
-                var result = items.filter(obj => {
-                    return toint(obj.id) == this.selected_tile_id;
-                  });
-                var tileNum = result[0].type;
-                var tileId = result[0].id;
-            }
-            var updir = false;
-            var ldir = false;
-            for (const key in s.target.classList) {
-                if (s.target.classList[key] == "up") {
-                    updir = true;
-                } else if (s.target.classList[key] == "left") {
-                    ldir = true;
-                }
-            }
-            if ($('button_conf_move') == null) {
-                // if no previous position selected, show the confirm button
-                this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton' );
-            } else {
-                // if a position was already selected, remove the tile there -> wouldn't be beter to move it... ?
-                dojo.destroy("tile_" + tileId);
-            }
-            // place tile on board
-            this.dbMovepos = pos.slice(0);
-            if (Math.floor(tileNum / 10 ) != 1) {
-                var x = pos[0]/4;
-                var y = (toint(pos[1]) ) /4;
-                var rot = 0;
-                if (updir) {
-                    var y = (toint(pos[1]) - 1 )/4;
-                    this.dbMovepos[1] -= 1; // adapt position to send to DB
+            console.log(s.target.classList.value);
+            if (s.target.classList.value.includes("selected_pos")) {
+                if( this.checkAction('placeTile') )
+                {
+                    // Remove elements: button, and placement options
+                    dojo.destroy("button_conf_move");
+                    dojo.query('.possibleMoveH').forEach(function(t) {dojo.style(t,'display','none')});
+                    dojo.query('.possibleMoveV').forEach(function(t) {dojo.style(t,'display','none')});
+    
+                    // Start countdown for confirmation of tile placement
+                    if ($('button_conf_move') == null) {
+                        // if no previous position selected, show the confirm button
+                        this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton','customActions' );
+                    }
+                    this.startActionTimer('button_conf_move', 3, 1);
+                    // add a Cancel button
+                    this.addActionButton( 'cancel_placement', _('Cancel'), 'onClickCancelTilePositionButton','customActions',false,'gray' );
+                    dojo.place('cancel_placement', 'customActions', 'last');
                 }
             } else {
-                var x = (pos[0] / 200 + 50 * pos[0] + 25)/200;
-                var y = ((toint(pos[1]) / 200) + 50 * toint(pos[1]) - 25) / 200;
-                var rot = -90;
-                if (ldir) {
-                    var x = ((pos[0] - 1) / 200 + 50 * (pos[0] - 1) + 25)/200;
-                    this.dbMovepos[0] -= 1; // adapt position to send to DB
+                // reset opacity to default
+                dojo.query('.possibleMoveV').removeClass('hidden_pos');
+                dojo.query('.possibleMoveH').removeClass('hidden_pos');
+                dojo.query('.possibleMoveV').removeClass('selected_pos');
+                dojo.query('.possibleMoveH').removeClass('selected_pos');
+                if (typeof this.playerHand != "undefined") {
+                    // 4+ players mode
+                    var tileNum = this.playerHand.items[0].type;
+                    var tileId = this.playerHand.items[0].id;
+                } else {
+                    // 2-3 players mode
+                    let items = (this.active_row == 1) ? this.upper_row.items : this.lower_row.items;
+                    var result = items.filter(obj => {
+                        return toint(obj.id) == this.selected_tile_id;
+                      });
+                    var tileNum = result[0].type;
+                    var tileId = result[0].id;
                 }
+                var updir = false;
+                var ldir = false;
+                for (const key in s.target.classList) {
+                    if (s.target.classList[key] == "up") {
+                        updir = true;
+                    } else if (s.target.classList[key] == "left") {
+                        ldir = true;
+                    }
+                }
+                if ($('button_conf_move') == null) {
+                    // if no previous position selected, show the confirm button
+                    this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton','customActions' );
+                } else {
+                    // if a position was already selected, remove the tile there -> wouldn't be beter to move it... ?
+                    dojo.destroy("tile_" + tileId);
+                }
+                // place tile on board
+                this.dbMovepos = pos.slice(0);
+                if (Math.floor(tileNum / 10 ) != 1) {
+                    var x = pos[0]/4;
+                    var y = (toint(pos[1]) ) /4;
+                    var rot = 0;
+                    if (updir) {
+                        var y = (toint(pos[1]) - 1 )/4;
+                        this.dbMovepos[1] -= 1; // adapt position to send to DB
+                    }
+                } else {
+                    var x = (pos[0] / 200 + 50 * pos[0] + 25)/200;
+                    var y = ((toint(pos[1]) / 200) + 50 * toint(pos[1]) - 25) / 200;
+                    var rot = -90;
+                    if (ldir) {
+                        var x = ((pos[0] - 1) / 200 + 50 * (pos[0] - 1) + 25)/200;
+                        this.dbMovepos[0] -= 1; // adapt position to send to DB
+                    }
+                }
+                // set to transparent the clicked position
+                var otile = '#move_'+toint(pos[0])+'*'+toint(pos[1]);
+                this.current_move = 'move_'+toint(pos[0])+'*'+toint(pos[1])
+                dojo.query(otile).addClass('selected_pos');
+                //setTimeout(() => { dojo.query(otile).addClass('hidden_pos'); }, 600);
+                this.placeTile(this.player_id, tileNum, tileId, x , y , rot, 0);
+                this.lastPossibleMoveIdx = pos;
             }
-            // set to transparent the clicked position
-            var otile = '#move_'+toint(pos[0])+'*'+toint(pos[1]);
-            this.current_move = 'move_'+toint(pos[0])+'*'+toint(pos[1])
-            dojo.query(otile).addClass('selected_pos');
-            setTimeout(() => { dojo.query(otile).addClass('hidden_pos'); }, 600);
-            this.placeTile(this.player_id, tileNum, tileId, x , y , rot, 0);            
-            this.lastPossibleMoveIdx = pos;
 
 
         },
@@ -1869,6 +1932,9 @@ function (dojo, declare) {
             if( this.checkAction('placeTile') )
             {
                 // Remove elements: button, and placement options
+                if ($('cancel_placement') != null) {
+                    dojo.destroy("cancel_placement");
+                }
                 dojo.destroy("button_conf_move");
                 dojo.query('.possibleMoveH').forEach(dojo.destroy);
                 dojo.query('.possibleMoveV').forEach(dojo.destroy);
@@ -1879,6 +1945,32 @@ function (dojo, declare) {
                                 whichMove: this.dbMovepos.toString() },
                             this, function(){});
             }
+        },
+
+        onClickCancelTilePositionButton: function( evt )
+        {
+            dojo.stopEvent( evt );
+            dojo.destroy("button_conf_move");
+            dojo.destroy("cancel_placement");
+            // reset opacity to default
+            dojo.query('.possibleMoveH').forEach(function(t) {dojo.style(t,'display','block')});
+            dojo.query('.possibleMoveV').forEach(function(t) {dojo.style(t,'display','block')});
+            dojo.query('.possibleMoveV').removeClass('hidden_pos');
+            dojo.query('.possibleMoveH').removeClass('hidden_pos');
+            dojo.query('.possibleMoveV').removeClass('selected_pos');
+            dojo.query('.possibleMoveH').removeClass('selected_pos');
+            if (typeof this.playerHand != "undefined") {
+                // 4+ players mode
+                var tileId = this.playerHand.items[0].id;
+            } else {
+                // 2-3 players mode
+                let items = (this.active_row == 1) ? this.upper_row.items : this.lower_row.items;
+                var result = items.filter(obj => {
+                    return toint(obj.id) == this.selected_tile_id;
+                  });
+                var tileId = result[0].id;
+            }
+            dojo.destroy("tile_" + tileId);
         },
         
         ///////////////////////////////////////////////////
@@ -2141,7 +2233,7 @@ function (dojo, declare) {
                 this.desactivateShips();
                 if (this.lastTurn) {
                     if ($('SelConfbutton') == null) {
-                        this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile' );
+                        this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile','customActions' );
                     } else {
                         dojo.removeClass( 'SelConfbutton', 'disabled');
                     }
