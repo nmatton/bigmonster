@@ -76,6 +76,13 @@ function (dojo, declare) {
             this.currentPlayer = this.player_id;
             this.nums_of_players = Object.keys(gamedatas.players).length;
             this.boards = [];
+            this.hidescore = gamedatas.hidescore;
+            if (this.hidescore) {
+                // replace scores by '?' if option is set
+                for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
+                    $('player_score_' + o).innerHTML='?';
+                    this.addTooltip( 'player_score_' + o, _('live score is hidden by table option'), '', 10 )
+            }
             centerscroll = false;
             if (!this.isTeamPlay) {
                 // individual game setup
@@ -2284,7 +2291,9 @@ function (dojo, declare) {
 
         notif_scoreUpdate : function (notif) {
             var s = notif.args;
-            this.scoreCtrl[ s.player_id ].incValue( s.score_delta );
+            if (!this.hidescore) {
+                this.scoreCtrl[ s.player_id ].incValue( s.score_delta );
+            }
         },
 
 

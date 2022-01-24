@@ -368,6 +368,7 @@ class BigMonster extends Table
         $result['help_explorers'] = $this->explorer_infos;
         $result['help_medals'] = $this->medals_infos;
         $result['isTeamPlay'] = $this->isTeamPlay();
+        $result['hidescore'] = $this->hideScore();
         return $result;
     }
 
@@ -448,7 +449,7 @@ class BigMonster extends Table
 
     public function test()
     {
-        $res = $this->checkMedalSuccess(7);
+        $res = $this->hideScore();
         print_r($res);
         $medal_id=81;
     }
