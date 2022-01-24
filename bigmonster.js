@@ -1229,6 +1229,7 @@ function (dojo, declare) {
                     unsel_cards.push(unsel_cards_list[i]['id'])
                 }
                 // sent info to server
+                dojo.empty('customActions');
                 this.ajaxcall( '/bigmonster/bigmonster/selectShip.html', { lock: true, 
                     ship_player_id : t,
                     rem_cards : unsel_cards.toString(),
@@ -1640,6 +1641,7 @@ function (dojo, declare) {
         selectTeamPlayer: function(in_pID) {
             const targer_player = in_pID;
             if (this.checkAction('selectTeam', true)) {
+                dojo.empty('customActions');
                 this.ajaxcall( '/bigmonster/bigmonster/selectTeam.html', { lock: true, 
                     player_id : this.player_id,
                     team_player_id : targer_player
@@ -1893,7 +1895,7 @@ function (dojo, declare) {
                     this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton','customActions' );
                 } else {
                     // if a position was already selected, remove the tile there -> wouldn't be beter to move it... ?
-                    dojo.destroy("tile_" + tileId);
+                    //dojo.destroy("tile_" + tileId);
                 }
                 // place tile on board
                 this.dbMovepos = pos.slice(0);
@@ -1919,7 +1921,13 @@ function (dojo, declare) {
                 this.current_move = 'move_'+toint(pos[0])+'*'+toint(pos[1])
                 dojo.query(otile).addClass('selected_pos');
                 //setTimeout(() => { dojo.query(otile).addClass('hidden_pos'); }, 600);
-                this.placeTile(this.player_id, tileNum, tileId, x , y , rot, 0);
+                if ($('tile_' + tileId)) {
+                    debug('tile on board, moving it to new position : x:' + x*2 + ' y:' + y*2);
+                    this.boards[this.player_id].moveIdToPos(this, "tile_"+tileId, x*2 * this.SCALE, y * 2 * this.SCALE, 0, 300)
+                } else {
+                    debug('new tile on board, placing it to position : x:' + x + ' y:' + y);
+                    this.placeTile(this.player_id, tileNum, tileId, x , y , rot, 0);
+                }
                 this.lastPossibleMoveIdx = pos;
             }
 
