@@ -240,7 +240,7 @@ padding-left: 4px;
 .bm_tileClass {
     width: 50px;
     height: 100px;
-    background-image: url(img/monster_tiles_1-4.jpg);
+    background-image: url(img/monster_tiles_1-4_v2.jpg);
     background-size: 900% auto;
 }
 
@@ -258,7 +258,7 @@ padding-left: 4px;
     width: 50px;
     height: 100px;
     position: absolute;
-    background-image: url(img/monster_tiles_1-4.jpg);
+    background-image: url(img/monster_tiles_1-4_v2.jpg);
     background-size: 900% auto;
     z-index: -1;
     transform: rotate(-90deg);
@@ -279,7 +279,7 @@ padding-left: 4px;
     width: 50px;
     height: 100px;
     position: absolute;
-    background-image: url(img/monster_tiles_1-4.jpg);
+    background-image: url(img/monster_tiles_1-4_v2.jpg);
     background-size: 900% auto;
     z-index: -1;
     transform: rotate(-90deg);
@@ -353,7 +353,7 @@ padding-left: 4px;
   .card .card-inner {
     transition: transform 0.3s;
     top: 0;
-    background-image: url(img/monster_tiles_1-4.jpg);
+    background-image: url(img/monster_tiles_1-4_v2.jpg);
     background-position: 0 -800% !important;
     background-size: 900% auto;
     outline: #e7e7e77d solid 1px;

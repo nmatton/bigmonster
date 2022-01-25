@@ -35,7 +35,7 @@ function (dojo, declare) {
             this.medalwidth = 100;
             this.medalheight = 100;
             this.tilePerRow = 9; // number of tile per row on sprited tile image
-            this.tiles_img_path = 'img/monster_tiles_stock.jpg'; // tile image path for stock component
+            this.tiles_img_path = 'img/monster_tiles_stock_v2.jpg'; // tile image path for stock component
             this.tile_selected = false; // check if user has selected a tile in his hand
             this.explo_selected = false; // check if user has selected a starting tile
             this.busyShips = [] // list of ships selected in the current turn. Re-initialized at each turn. in INT type !!
