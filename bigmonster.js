@@ -100,6 +100,7 @@ function (dojo, declare) {
             this.nums_of_players = Object.keys(gamedatas.players).length;
             this.boards = [];
             this.hidescore = gamedatas.hidescore;
+            this.is3pdraft = gamedatas.is3pdraft;
             centerscroll = false;
             if (!this.isTeamPlay) {
                 // individual game setup
@@ -221,9 +222,11 @@ function (dojo, declare) {
                 this.placeTile(i, explorer_id,explorer_id, 0,0,0,1,0);
                 let explo_info = gamedatas.help_explorers[explorer_id]['descrtr'];
                 console.log('adding tooltip to explorer '+explorer_id+' with info : '+explo_info)
-                this.addTooltip( 'tile_e_'+explorer_id, explo_info , _('draft cards to this player'), 10 )
+                if (this.nums_of_players >= 4 || this.is3pdraft) {
+                    this.addTooltip( 'tile_e_'+explorer_id, explo_info , _('draft cards to this player'), 10 )
+                }
             }
-            if (this.nums_of_players >= 4) {
+            if (this.nums_of_players >= 4 || this.is3pdraft) {
                 dojo.query('.bm_exploTileClass').connect('onclick', this, 'onClickExplo');
             }
 
@@ -287,7 +290,7 @@ function (dojo, declare) {
             // **** TILES AND HAND MANAGEMENT **** //
             if (!this.isSpectator) {
                 // ** Create hands of tiles ** //
-                if (this.nums_of_players >= 4) {
+                if (this.nums_of_players >= 4 || this.is3pdraft) {
                     // remove board title
                     dojo.destroy('bm_title_board');
                     // remove pile card count (the rem cards is visible in hand)
@@ -312,7 +315,6 @@ function (dojo, declare) {
                     }
         
                     // ** SET CARDS ON HANDS ** //
-                    console.log(gamedatas.help_monsters)
                     for ( var i in this.gamedatas.hand) {
                         var card = this.gamedatas.hand[i];
                         var type = toint(card.type);
@@ -344,7 +346,7 @@ function (dojo, declare) {
                     dojo.query('#card_counter').innerHTML(this.gamedatas.remaining_piles)
                     // rename my_hand div and add extra row for tiles selection
                     $('myhand').id='upper_row';
-                    dojo.place( "<div id='lower_row' class='whiteblock bm_tileArea'></div>" , $('myhand_wrap'));
+                    dojo.place( "<div id='lower_row' class='whiteblock bm_tileArea'></div>" , $('myhand_area'));
                     this.upper_row = new ebg.stock();
                     this.lower_row = new ebg.stock();
                     this.upper_row.create( this, $('upper_row'), this.tiledwidth, this.tileheight );
@@ -510,7 +512,7 @@ function (dojo, declare) {
                 this.rearrange_medals();
             }
 
-            if (this.nums_of_players < 4 && $('ma_'+this.gamedatas.first_player) && this.gamedatas.first_player != 0) {
+            if (this.nums_of_players < 4 && $('ma_'+this.gamedatas.first_player) && this.gamedatas.first_player != 0 && !this.is3pdraft) {
                 // insert first player medal
                 var player_medal_zone_div = $('ma_'+this.gamedatas.first_player);
                 dojo.place( this.format_block('jstpl_first_player_medal',{}), player_medal_zone_div, 'first');
@@ -610,7 +612,7 @@ function (dojo, declare) {
                             popupcontent += '<p id="exploInfo"> ' + explo_info + '</p></div>'
                         }
                         popupcontent += '</div><button id="conf_expl_btn" class="bm_accept-pending">Confirm selection</button></div>'
-                        dojo.place(popupcontent, "ships", "before");
+                        dojo.place(popupcontent, "handmedal_area", "before");
                         for (var i = 0; i < explorers.length; i++) {
                             var explo_id = explorers[i]['explorer_id'];
                             dojo.query("#tile_" + explo_id).connect("onclick", this, "onClickStartTile")
@@ -1234,7 +1236,9 @@ function (dojo, declare) {
                     ship_player_id : t,
                     rem_cards : unsel_cards.toString(),
                     sel_card : sel_cards_list[0]['id']
-                 }, this, function( result ) {} );
+                 }, this, function( result ) {
+                    dojo.empty('customActions');
+                 } );
             } else if (!this.tile_selected) {
                 // the user did not selected a tile in his hand
                 this.showMessage( _("You must select a tile in your hand first"), "error" )
@@ -1645,7 +1649,9 @@ function (dojo, declare) {
                 this.ajaxcall( '/bigmonster/bigmonster/selectTeam.html', { lock: true, 
                     player_id : this.player_id,
                     team_player_id : targer_player
-                    }, this, function( result ) {} );
+                    }, this, function( result ) {
+                        dojo.empty('customActions');
+                    } );
             }
         },
 
@@ -1711,6 +1717,12 @@ function (dojo, declare) {
             if (this.active_row == 0 | this.selected_row == this.active_row) {
                 var items = tilerow.getSelectedItems();
                 if (items.length > 0) {
+                    debug('tile selected');
+                    if ($('TiletoPlaybutton')) {
+                        dojo.removeClass( 'TiletoPlaybutton', 'disabled');
+                    } else if ($('TiletoDiscardbutton')) {
+                        dojo.removeClass( 'TiletoDiscardbutton', 'disabled');
+                    }
                     if (this.checkAction('var_SelectTile', true) && this.selected_tile_id == 0) {
                         // PLAY CARD SELECTION
                         if ($('TiletoPlaybutton') == null) {
@@ -1732,11 +1744,14 @@ function (dojo, declare) {
                     }
                     else {
                         tilerow.unselectAll();
+                        debug('unselecting tiles')
                         if ($('TiletoPlaybutton') || $('TiletoDiscardbutton')) {
                             if (this.selected_tile_id == 0) {
-                                dojo.toggleClass( 'TiletoPlaybutton', 'disabled');
+                                debug('unselecting tile -> disabling button')
+                                dojo.addClass( 'TiletoPlaybutton', 'disabled');
                             } else {
-                                dojo.toggleClass( 'TiletoDiscardbutton', 'disabled');
+                                debug('unselecting tile -> disabling button')
+                                dojo.addClass( 'TiletoDiscardbutton', 'disabled');
                             }
                         }
                         if (this.gamedatas.gamestate.name == "var_tileSelection") {
@@ -1744,6 +1759,12 @@ function (dojo, declare) {
                         }
                     }
                 } else {
+                    debug('no tile selected');
+                    if ($('TiletoPlaybutton')) {
+                        dojo.addClass( 'TiletoPlaybutton', 'disabled');
+                    } else if ($('TiletoDiscardbutton')) {
+                        dojo.addClass( 'TiletoDiscardbutton', 'disabled');
+                    }
                     this.tile_selected = false;
                 }
             } else {
@@ -1762,7 +1783,9 @@ function (dojo, declare) {
                     ship_player_id : 0, // because we used a button -> not related to another player
                     rem_cards : unsel_card[0]['id'],
                     sel_card : sel_cards_list[0]['id']
-                 }, this, function( result ) {} );
+                 }, this, function( result ) {
+                    dojo.empty('customActions');
+                 } );
                  this.buttonAdded = false;
             } else if (!this.tile_selected) {
                 this.showMessage( _("You must select a tile in your hand first"), "error" )
@@ -1799,7 +1822,9 @@ function (dojo, declare) {
                     rem_cards : unsel_cards.toString(),
                     sel_card : sel_cards_list[0]['id'],
                     sel_action : sel_action
-                 }, this, function( result ) {} );
+                 }, this, function( result ) {
+                    dojo.empty('customActions');
+                 } );
             } else if (!this.tile_selected) {
                 this.showMessage( _("You must select a tile first"), "error" ); // should never be displayed as button is normally disabled
             }
@@ -1835,7 +1860,9 @@ function (dojo, declare) {
                 this.ajaxcall( "/bigmonster/bigmonster/selectStartingExplorer.html", {
                     lock: true,
                     tile: st
-                }, this, function( result ) {} );
+                }, this, function( result ) {
+                    dojo.empty('customActions');
+                } );
             }
             // remove bm_popup
             dojo.destroy("bm_popup");
@@ -1869,11 +1896,11 @@ function (dojo, declare) {
                 dojo.query('.possibleMoveV').removeClass('selected_pos');
                 dojo.query('.possibleMoveH').removeClass('selected_pos');
                 if (typeof this.playerHand != "undefined") {
-                    // 4+ players mode
+                    // draft mode (where each player has a hand)
                     var tileNum = this.playerHand.items[0].type;
                     var tileId = this.playerHand.items[0].id;
                 } else {
-                    // 2-3 players mode
+                    // variable mode (where there is common "hands")
                     let items = (this.active_row == 1) ? this.upper_row.items : this.lower_row.items;
                     var result = items.filter(obj => {
                         return toint(obj.id) == this.selected_tile_id;
@@ -1951,7 +1978,9 @@ function (dojo, declare) {
                 this.ajaxcall("/bigmonster/bigmonster/placeTile.html",
                             {   lock: true,
                                 whichMove: this.dbMovepos.toString() },
-                            this, function(){});
+                            this, function(){
+                                dojo.empty('customActions');
+                            });
             }
         },
 
@@ -2355,13 +2384,13 @@ function (dojo, declare) {
                     dojo.destroy("tile_"+s.card_id);
                 }
                 this.placeTile(s.player_id, tileNum, s.card_id, x , y , rot, 0, toint(s.mutation_level) );
-                if (this.nums_of_players < 4) {
+                if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
                     tilerow.removeFromStockById( s.card_id );
                 }
             } else {
                 // tile played by player -> remove from hand
-                if (this.nums_of_players < 4) {
+                if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
                     tilerow.removeFromStockById( s.card_id );
                 } else {

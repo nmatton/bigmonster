@@ -81,6 +81,61 @@ $game_options = array(
                 'nobeginner' => true
             )
         )
+    ),
+
+    103 => array(
+        'name' => totranslate('Draft or variant mode for 3 players'),
+        'values' => array(
+            1 => array(
+                'name' => totranslate('Draft mode for 3 players'),
+                'description' => totranslate('Draft mode for 3 players'),
+                'tmdisplay' => totranslate('Draft mode for 3 players')
+            ),
+            2 => array(
+                'name' => totranslate('Variant mode for 3 players'),
+                'description' => totranslate('Variant mode for 3 players'),
+                'tmdisplay' => totranslate('Variant mode for 3 players')
+            )
+        ),
+        'displaycondition' => array( 
+            array(
+                'type' => 'minplayers',
+                'value' => 3,
+                'message' => totranslate('Exactly 3 players are required for this option.')),
+            array(
+                'type' => 'maxplayers',
+                'value' => 3,
+                'message' => totranslate('Exactly 3 players are required for this option.'))
+        ),
+            'startcondition' => array(
+                1 => array(array(
+                    'type' => 'minplayers',
+                    'value' => 3,
+                    'message' => totranslate('Exactly 3 players are required for this option.'),
+                    'gamestartonly' => true,
+                ),
+                array(
+                    'type' => 'maxplayers',
+                    'value' => 3,
+                    'message' => totranslate('Exactly 3 players are required for this option.'),
+                    'gamestartonly' => true,
+                )),
+                2 => array(
+                    array(
+                        'type' => 'minplayers',
+                        'value' => 3,
+                        'message' => totranslate('Exactly 3 players are required for this option.'),
+                        'gamestartonly' => true,
+                    ),
+                    array(
+                        'type' => 'maxplayers',
+                        'value' => 3,
+                        'message' => totranslate('Exactly 3 players are required for this option.'),
+                        'gamestartonly' => true,
+                    )
+                ),
+            ),
+            'notdisplayedmessage' => totranslate('3 players table variant (draft or variant)')
     )
 );
 

@@ -36,9 +36,10 @@ class BigMonster extends Table
                          "currentTurn" => 11,
                          "active_row" => 13,
                          "first_player" => 14,
+                         "teamdefined" => 15,
                          "playmode" => 101,
                          "hidescore" => 102,
-                         "teamdefined" => 103) );
+                         '3pdraft' => 103) );
 
         $this->cards = self::getNew( "module.common.deck" );
         $this->cards->init( "card" );
@@ -369,6 +370,7 @@ class BigMonster extends Table
         $result['help_medals'] = $this->medals_infos;
         $result['isTeamPlay'] = $this->isTeamPlay();
         $result['hidescore'] = $this->hideScore();
+        $result['is3pdraft'] = $this->is3pdraft();
         return $result;
     }
 
@@ -384,7 +386,7 @@ class BigMonster extends Table
     */
     function getGameProgression()
     {
-        if (self::getGameStateValue( 'currentRound' ) === 0 and self::getPlayersNumber() < 4) {
+        if (self::getGameStateValue( 'currentRound' ) === 0 and (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) ) {
             return 0;
         } else {
             return floor((self::getGameStateValue( 'currentTurn' )+1)*100/17);
@@ -449,7 +451,7 @@ class BigMonster extends Table
 
     public function test()
     {
-        $res = $this->hideScore();
+        $res = $this->getPlayerAfter( self::getActivePlayerId() );
         print_r($res);
         $medal_id=81;
     }
@@ -651,6 +653,12 @@ class BigMonster extends Table
     // check if teamplay mode is selected
     public function isTeamPlay() {
         return intval($this->getGameStateValue('playmode')) === 2;
+    }
+
+    // is 3p draft mode ?
+    public function is3pdraft() {
+        // 1 = draft mode ; 2 = variant mode
+        return intval($this->getGameStateValue('3pdraft')) === 1;
     }
 
     // check if hiding score mode is selected
@@ -1842,14 +1850,16 @@ class BigMonster extends Table
         return $score;
     }
 
-    protected function computeTeamScore($breakdowns)
+    protected function computeTeamScore($breakdowns, $tie=false)
     {
         # Compute team score based on indivuduals scores
         $team_score = array();
         $teams = $this->get_teams();
         foreach ($teams as $player_id => $team_id) {
             if (array_key_exists($team_id, $team_score)) {
-                if ($team_score[$team_id] > $breakdowns[$player_id]['score']) {
+                if ($team_score[$team_id] > $breakdowns[$player_id]['score'] and !$tie) {
+                    $team_score[$team_id] = $breakdowns[$player_id]['score'];
+                } elseif ($team_score[$team_id] < $breakdowns[$player_id]['score'] and $tie) {
                     $team_score[$team_id] = $breakdowns[$player_id]['score'];
                 }
             }
@@ -1946,7 +1956,7 @@ class BigMonster extends Table
         $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
         $sql = "UPDATE explorers SET selected = 1 WHERE player_id = $player_id AND explorer_id = $explorer_id";
         self::DbQuery($sql);
-        if (self::getPlayersNumber() < 4) {
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             $this->gamestate->setPlayerNonMultiactive($player_id, 'var_newTurn');
         } else {
             $this->gamestate->setPlayerNonMultiactive($player_id, 'newRound');
@@ -2070,7 +2080,8 @@ class BigMonster extends Table
     function placeTile($whichMove_str)
     {
         self::checkAction( 'placeTile' );
-        if (self::getPlayersNumber() < 4) {
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
+            // variant mode
             $player_id = self::getActivePlayerId();
         } else {
             $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
@@ -2120,7 +2131,7 @@ class BigMonster extends Table
         //var_dump(self::getPlayersNumber());
         if ($current_state == 'bmExploTilePlacement') {
             $this->gamestate->nextState( 'pregameEnd' );
-        } elseif (self::getPlayersNumber() < 4){
+        } elseif (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())){
             //var_dump('GO TO VAR END TURN !!!');
             $this->gamestate->nextState( 'var_endTurn' );
         } else {
@@ -2424,7 +2435,7 @@ class BigMonster extends Table
         $currentTurn+=1;
         self::setGameStateValue( 'currentTurn', $currentTurn );
         self::setGameStateValue( 'active_row', 0 ); // reset active row
-        self::setGameStateValue( 'first_player', self::getActivePlayerId());
+        self::setGameStateValue( 'first_player', $this->getPlayerAfter( self::getActivePlayerId() ));
         $this->gamestate->nextState( 'var_tileSelection' );
     }
 
@@ -2551,7 +2562,7 @@ class BigMonster extends Table
             }
         }
         // 3. Score
-        if (self::getPlayersNumber() < 4) {
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             // compute score for player finishing turn
             $player_id = self::getActivePlayerId();
             $score = $this->computeScore($player_id);
@@ -2580,7 +2591,7 @@ class BigMonster extends Table
             }
         }
         // 4. Give extra time to players
-        if (self::getPlayersNumber() < 4) {
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             self::giveExtraTime($player_id);
         } else {
             foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
@@ -2588,7 +2599,7 @@ class BigMonster extends Table
             }
         }
         // 5. checking game situation
-        if (self::getPlayersNumber() < 4) {
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             $active_row = self::getGameStateValue( 'active_row' );
             $other_row = ($active_row === 1) ? 0 : 1;
             $row_cards_remaining = $this->custcountCardInLocation( 'hand', $active_row );
@@ -2781,6 +2792,47 @@ class BigMonster extends Table
         } else {
             $team_scores = array();
             $winning_team = array();
+        }
+        if (count($winning_team) > 1) {
+            // more than 1 team won -> check 1st tie-breaker : the best score of the 2nd teams' member
+            $tie_scores_tmp = $this->computeTeamScore($breakdowns, true);
+            $tie_scores = array();
+            foreach ($winning_team as $tied_team) {
+                $tie_scores[$tied_team] = $tie_scores_tmp[$tied_team];
+            }
+            $winning_team = array_keys($tie_scores,max($tie_scores));
+            if (count($winning_team) > 1) {
+                // tie again -> check 2nd tie-breaker : the most bigmonster point for teams
+                $tie_scores = array();
+                foreach ($winning_team as $tied_team) {
+                    $team_player_ids = $this->getTeamPlayers($tied_team);
+                    $score1 = $this->computeScore($team_player_ids[0], true);
+                    $score2 = $this->computeScore($team_player_ids[1], true);
+                    $tie_scores[$tied_team] = $score1['bigmonster'] + $score2['bigmonster'];
+                }
+                $winning_team = array_keys($tie_scores,max($tie_scores));
+                if (count($winning_team) > 1) {
+                    // teams are still tied -> tie is the final situation : record to DB
+                    foreach ($winning_team as $tied_team) {
+                        $team_player_ids = $this->getTeamPlayers($tied_team);
+                        $tiescore = $tie_scores[$tied_team];
+                        self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                        self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                    }
+                } else {
+                    // one team won with the 2nd tie-breaker : record to DB
+                    $team_player_ids = $this->getTeamPlayers($winning_team);
+                    $tiescore = $tie_scores[$winning_team];
+                    self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                    self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                }
+            } else {
+                // record tie-breaker score to DB
+                $team_player_ids = $this->getTeamPlayers($winning_team);
+                $tiescore = $tie_scores[$winning_team];
+                self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+            }
         }
         $notif_data = array(
             "breakdowns" => $breakdowns,
