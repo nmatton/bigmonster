@@ -2435,7 +2435,7 @@ class BigMonster extends Table
         $currentTurn+=1;
         self::setGameStateValue( 'currentTurn', $currentTurn );
         self::setGameStateValue( 'active_row', 0 ); // reset active row
-        self::setGameStateValue( 'first_player', $this->getPlayerAfter( self::getActivePlayerId() ));
+        self::setGameStateValue( 'first_player', self::getActivePlayerId());
         $this->gamestate->nextState( 'var_tileSelection' );
     }
 
@@ -2601,17 +2601,19 @@ class BigMonster extends Table
         // 5. checking game situation
         if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             $active_row = self::getGameStateValue( 'active_row' );
-            $other_row = ($active_row === 1) ? 0 : 1;
             $row_cards_remaining = $this->custcountCardInLocation( 'hand', $active_row );
             if ($row_cards_remaining >= 2) {
+                // move to next player in same turn (set of tiles on same row)
                 $this->activeNextPlayer();
                 $this->gamestate->nextState( 'var_tileSelection' );
             } else {
+                // the row is complete, move to next turn
                 $tot_cards_remaining = $this->custcountCardInLocation( 'deck' ) + $this->custcountCardInLocation( 'hand');
                 if ($tot_cards_remaining == 0) {
                     // end of the game
                     $this->gamestate->nextState( 'pregameEnd' );
                 } else {
+                    $this->gamestate->changeActivePlayer( $this->getPlayerAfter($this->getPlayerAfter(self::getActivePlayerId() )));
                     $this->gamestate->nextState( 'var_newTurn' );
                 }
             }

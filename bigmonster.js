@@ -744,7 +744,9 @@ function (dojo, declare) {
                         this.slideToObjectRelative( "firstplayermedal", "ma_" +active_player, 1000, 0, 'first');
                     }
                     // update the number of cards remaing
-                    dojo.query('#card_counter').innerHTML(toint($('card_counter').innerHTML)-1)
+                    if (toint($('card_counter').innerHTML) > 0) {
+                        dojo.query('#card_counter').innerHTML(toint($('card_counter').innerHTML)-1)
+                    }
                     this.new_turn=false;
                 }
                 if ($('bm_popup')) {
@@ -2112,14 +2114,16 @@ function (dojo, declare) {
                     breakdownStage = 'medals';
                 }
                 // Set arrow to here
-                let player_list = this.teams_ordered.flat()
                 setTimeout(this.setScoringArrowRow.bind(this, stage), currentTime);
-                for( let i in player_list ) {
-                    player_id = player_list[i];
-                    // timer version
-                    setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
-                    this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
-                    currentTime += 500;
+                if (this.isTeamPlay) {
+                    let player_list = this.teams_ordered.flat()
+                    for( let i in player_list ) {
+                        player_id = player_list[i];
+                        // timer version
+                        setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
+                        this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
+                        currentTime += 500;
+                    }
                 }
             }
             if (this.isTeamPlay) {
@@ -2380,13 +2384,45 @@ function (dojo, declare) {
                 type = s.type_monster;
                 tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
                 const [x, y, rot] = this.convert_coord(s.x , s.y, type);
+                // move tile from hand to board
+                // create a phantom block to move the tile to
+                phantomId = 'phantomplace_'+s.x+'*'+s.y;
+                var html = '<div id="'+phantomId+'" class="phantomplace" style="'+
+                    'top:'+(s.y*this.SCALE/2)+'px; left:'+(x*this.SCALE*2)+'px; width:50px; height:50px; position:absolute'+
+                    '"></div>';
+                debug('created the html snippet : '+html);
+                this.boards[s.player_id].addHtml(html,0);
+                debug('added the html snippet to the board');
+                if (this.nums_of_players < 4 &&  !this.is3pdraft) {
+                    let rowname = (this.active_row == 1) ? 'upper_row' : 'lower_row';
+                    tideId = rowname+"_item_"+s.card_id;
+                    clone_tile = $(tideId).cloneNode()
+                    clone_tile.id = 'clone_'+tideId;
+                    tideId = 'clone_'+tideId;
+                    dojo.place(clone_tile,rowname); //upper_row_item_97
+                } else {
+                    let tmptileDiv = this.format_block('jstpl_tmp_tile', {
+                        tile_id : '#'+s.card_id,
+                        back_x: toint(kind_monster)*100,
+                        back_y: toint(type)*100,
+                        rot: rot
+                    });
+                    dojo.place( tmptileDiv, "overall_player_board_"+s.player_id, "first" );
+                    tideId = "tmp_tile_"+s.card_id;
+                }
+                this.slideToObjectAndDestroy( tideId , phantomId, 1000, 0 );
+                debug('slided the tile to the phantom place');
+                setInterval(dojo.destroy("phantomplace_"+s.x+"*"+s.y), 1100);
+                debug('destroyed the phantom place');
                 if (toint(s.mutation) > 0) {
                     dojo.destroy("tile_"+s.card_id);
                 }
-                this.placeTile(s.player_id, tileNum, s.card_id, x , y , rot, 0, toint(s.mutation_level) );
+                setInterval(this.placeTile(s.player_id, tileNum, s.card_id, x , y , rot, 0, toint(s.mutation_level) ),990);
                 if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
+                    debug('update the tile row');
                     tilerow.removeFromStockById( s.card_id );
+                    setInterval(tilerow.updateDisplay(),200);
                 }
             } else {
                 // tile played by player -> remove from hand

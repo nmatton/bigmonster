@@ -196,6 +196,7 @@ var jstpl_helpDialog5p = `
 `;
 var jstpl_first_player_medal = '<div id="firstplayermedal" class="medal first_player"></div>';
 var jstpl_team_banner = '<div class="team_banner" style="background-color: ${color};">TEAM ${team_nr}</div>';
+var jstpl_tmp_tile = '<div id="tmp_tile_${tile_id}" class="bm_tileClass" style="background-position: -{back_x}% -{back_y}%; transform: rotate(${rot}deg);"></div>'
 $(function() {
     $('.bm_fitin div').css('font-size', '1em');
     
