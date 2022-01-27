@@ -333,7 +333,7 @@ function (dojo, declare) {
                         } else {
                             var rot = '';
                         }
-                        this.addTooltipHtml( 'myhand_item_'+card.id, "<div style='width: 250px; text-align: center;'><div><h3>"+monster_name+"</h3><hr></div><div class='bm_tileClass tooltip_tile' style='background-position: -"+(kind_monster-1)*100+"% -"+(type-1)*100+"%; "+rot+"'></div><br><p>"+monster_descr+"</p></div>", 10 );
+                        this.addTooltipHtml( 'myhand_item_'+card.id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile' style='background-position: -"+(kind_monster-1)*100+"% -"+(type-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", 10 );
                     }
                     // add listeners on cards on hand
                     dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -609,7 +609,7 @@ function (dojo, declare) {
                             var explo_id = explorers[i]['explorer_id'];
                             var explo_info = explorers[i]['explorer_info'];
                             popupcontent += this.tileHtml(explo_id, explo_id, 0, 0, 1, 1, 0);
-                            popupcontent += '<p id="exploInfo"> ' + explo_info + '</p></div>'
+                            popupcontent += '<p id="exploInfo"> ' + _(explo_info) + '</p></div>'
                         }
                         popupcontent += '</div><button id="conf_expl_btn" class="bm_accept-pending">Confirm selection</button></div>'
                         dojo.place(popupcontent, "handmedal_area", "before");
@@ -1172,7 +1172,7 @@ function (dojo, declare) {
             var n = "";
             var c = '"top:' + t * this.SCALE + "px; left:" + s * this.SCALE + "px; ";
             i && (c = '"position:relative; display:inline-block; margin:10px auto; cursor:pointer; ');
-            return '<div id="tile_' + id + '" class="'+ iclass +'" style=' + (c += "background-position: -" + 100 * r + "% -" + 100 * a + '%;"') + ">" + n + "</div>"
+            return '<div id="tile_' + id + '" class="'+ iclass +'" style=' + (c += "background-position: -" + 100 * r + "% -" + 100 * a + '%"; data-x="'+100*s+'"; data-y="'+100 *t+'"') + ">" + n + "</div>"
         },
         placeTile: function(s, t, id,  o, i, l, b=0, m=0) {
             /* 
@@ -1289,22 +1289,24 @@ function (dojo, declare) {
                     dojo.style(evt.target, 'top', toint(pos[1]) * 100/2 - 50 + 'px'); // set new pos for upper expansion
                     let ximg = sel_tile.style.backgroundPositionX;
                     let yimg = sel_tile.style.backgroundPositionY;
-                    dojo.addClass(evt.target, 'bm_tileClass');
+                    if (!evt.target.classList.value.includes("selected_pos")) {
+                        dojo.addClass(evt.target, 'bm_tileClass');
+                    }
                     dojo.style(evt.target, 'backgroundPositionX', toint(ximg)/2+'px' );
                     dojo.style(evt.target, 'backgroundPositionY', toint(yimg)+'px');
                  });
             } else if (d == "R") {
                 // expansion to right
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
-                    let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
-                    let ximg = sel_tile.style.backgroundPositionX;
-                    if (toint(ximg) == -100) {
-                        dojo.addClass(evt.target, 'bm_tileClassH1');
-                    } else {
-                        dojo.addClass(evt.target, 'bm_tileClassH2');
-                    }
-                    let otile = '#move_'+toint(toint(pos[0])+1)+'*'+toint(toint(pos[1])+0);
                     if (!evt.target.classList.value.includes("selected_pos")) {
+                        let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
+                        let ximg = sel_tile.style.backgroundPositionX;
+                        if (toint(ximg) == -100) {
+                            dojo.addClass(evt.target, 'bm_tileClassH1');
+                        } else {
+                            dojo.addClass(evt.target, 'bm_tileClassH2');
+                        }
+                        let otile = '#move_'+toint(toint(pos[0])+1)+'*'+toint(toint(pos[1])+0);
                         dojo.query(otile).addClass('hidden_pos')
                     }
                     
@@ -1315,11 +1317,13 @@ function (dojo, declare) {
                 dojo.connect( $( 'move_'+x+'*'+y+''), 'mouseenter', function(evt) {
                     let pos = [evt.target.dataset.posX, evt.target.dataset.posY];
                     dojo.style(evt.target, 'left', toint(pos[0]) * 100/2 - 50 + 'px'); // set new pos for left expansion
-                    let ximg = sel_tile.style.backgroundPositionX;
-                    if (toint(ximg) == -100) {
-                        dojo.addClass(evt.target, 'bm_tileClassH1');
-                    } else {
-                        dojo.addClass(evt.target, 'bm_tileClassH2');
+                    if (!evt.target.classList.value.includes("selected_pos")) {
+                        let ximg = sel_tile.style.backgroundPositionX;
+                        if (toint(ximg) == -100) {
+                            dojo.addClass(evt.target, 'bm_tileClassH1');
+                        } else {
+                            dojo.addClass(evt.target, 'bm_tileClassH2');
+                        }
                     }
                  });
             }
@@ -1951,10 +1955,12 @@ function (dojo, declare) {
                 dojo.query(otile).addClass('selected_pos');
                 //setTimeout(() => { dojo.query(otile).addClass('hidden_pos'); }, 600);
                 if ($('tile_' + tileId)) {
-                    debug('tile on board, moving it to new position : x:' + x*2 + ' y:' + y*2);
-                    this.boards[this.player_id].moveIdToPos(this, "tile_"+tileId, x*2 * this.SCALE, y * 2 * this.SCALE, 0, 300)
+                    if (rot != 0) {
+                        this.boards[this.player_id].moveIdToPos(this, "tile_"+tileId, (x * 2 * this.SCALE)-25, (y *2* this.SCALE)+25, 0, 300)
+                    } else {
+                        this.boards[this.player_id].moveIdToPos(this, "tile_"+tileId, x*2 * this.SCALE, y * 2 * this.SCALE, 0, 300)
+                    }
                 } else {
-                    debug('new tile on board, placing it to position : x:' + x + ' y:' + y);
                     this.placeTile(this.player_id, tileNum, tileId, x , y , rot, 0);
                 }
                 this.lastPossibleMoveIdx = pos;
@@ -2085,6 +2091,7 @@ function (dojo, declare) {
          
          notif_endGame_scoring: function ( notif )
          {
+            console.log(notif);
             let breakdowns = notif.args.breakdowns;
             let winnerIds = [toint(notif.args.winner_ids)];
             if (this.isTeamPlay) {
@@ -2119,11 +2126,16 @@ function (dojo, declare) {
                     let player_list = this.teams_ordered.flat()
                     for( let i in player_list ) {
                         player_id = player_list[i];
-                        // timer version
                         setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
                         this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
                         currentTime += 500;
                     }
+                } else {
+                    for( let player_id in this.gamedatas.players ) {
+                        setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
+                        this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
+                        currentTime += 500;
+                     }
                 }
             }
             if (this.isTeamPlay) {

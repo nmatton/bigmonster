@@ -449,9 +449,132 @@ class BigMonster extends Table
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
     }
 
+    public function sendScoreBoard()
+    {
+        
+        // set stats and compute total scores
+        $breakdowns = array();
+        foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+            // Compute score with details
+            $score = $this->computeScore($player_id, true);
+            // append to breakdowns
+            $breakdowns[$player_id] = $score;
+            // get diamonds counts
+            $diams = $this->getDiamondsCount($player_id);
+            // organise stats results
+            $player_stat_results = array(
+                "explorer" => $this->getUniqueValueFromDB("SELECT explorer_id FROM explorers WHERE player_id = $player_id AND selected = 1"),
+                "pts_ice" => $score['ice'],
+                "pts_bm" => $score['bigmonster'],
+                "pts_lava" => $score['lava'] ,
+                "pts_grassland" => $score['grassland'] ,
+                "pts_swamp" => $score['swamp'] ,
+                "pts_diams" => $score['diams'] ,
+                "pts_explo" => $score['explo'] ,
+                "pts_medals" => $score['medals'] ,
+                "nbr_blue" => $diams['blue'] ,
+                "nbr_red" => $diams['red'] ,
+                "nbr_green" => $diams['green']);
+                $p_stats = $this->getStatList();
+            foreach ($p_stats as $stat_name) {
+                self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
+            }
+            // set the tie-breaker score
+            self::DbQuery( "UPDATE player SET player_score_aux = ".$score['bigmonster']." WHERE player_id='".$player_id."'" );
+        }
+        
+        // TODO : In theory there can be multiple...
+        $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
+        
+        // compute team score if teamode is enabled
+        if ($this->isTeamPlay()) {
+            $team_scores = $this->computeTeamScore($breakdowns);
+            $winning_team = array_keys($team_scores,max($team_scores));
+        } else {
+            $team_scores = array();
+            $winning_team = array();
+        }
+        if (count($winning_team) > 1) {
+            // more than 1 team won -> check 1st tie-breaker : the best score of the 2nd teams' member
+            $tie_scores_tmp = $this->computeTeamScore($breakdowns, true);
+            $tie_scores = array();
+            foreach ($winning_team as $tied_team) {
+                $tie_scores[$tied_team] = $tie_scores_tmp[$tied_team];
+            }
+            $winning_team = array_keys($tie_scores,max($tie_scores));
+            if (count($winning_team) > 1) {
+                // tie again -> check 2nd tie-breaker : the most bigmonster point for teams
+                $tie_scores = array();
+                foreach ($winning_team as $tied_team) {
+                    $team_player_ids = $this->getTeamPlayers($tied_team);
+                    $score1 = $this->computeScore($team_player_ids[0], true);
+                    $score2 = $this->computeScore($team_player_ids[1], true);
+                    $tie_scores[$tied_team] = $score1['bigmonster'] + $score2['bigmonster'];
+                }
+                $winning_team = array_keys($tie_scores,max($tie_scores));
+                if (count($winning_team) > 1) {
+                    // teams are still tied -> tie is the final situation : record to DB
+                    foreach ($winning_team as $tied_team) {
+                        $team_player_ids = $this->getTeamPlayers($tied_team);
+                        $tiescore = $tie_scores[$tied_team];
+                        self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                        self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                    }
+                } else {
+                    // one team won with the 2nd tie-breaker : record to DB
+                    $team_player_ids = $this->getTeamPlayers($winning_team);
+                    $tiescore = $tie_scores[$winning_team];
+                    self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                    self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                }
+            } else {
+                // record tie-breaker score to DB
+                $team_player_ids = $this->getTeamPlayers($winning_team);
+                $tiescore = $tie_scores[$winning_team];
+                self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
+                self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+            }
+        }
+        $notif_data = array(
+            "breakdowns" => $breakdowns,
+            "winner_ids" => $winner_id,
+            "team_scores" => $team_scores,
+            "winning_team" => $winning_team
+        );
+        // send notif of end scores
+        // update score of BGA framework
+        foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+            $score = $this->computeScore($player_id);
+            if ($score['delta'] !== 0) {
+                // score has changed
+                $this->dbSetScore($player_id, $score['score']); // update DB
+                self::NotifyAllPlayers("scoreUpdate", '', array(
+                    "player_id" => $player_id,
+                    "score" => $score['score'],
+                    "score_delta" => $score['delta'])
+                ); // notify players
+            }
+        }
+        if ($this->isTeamPlay()) {
+            foreach (array_unique(array_values($this->get_teams())) as $team ) {
+                $players_ids = $this->getTeamPlayers($team);
+                if (in_array($team, $winning_team)) {
+                    $this->dbSetScore($players_ids[0], 1); // update DB
+                    $this->dbSetScore($players_ids[1], 1); // update DB
+                } else {
+                    $this->dbSetScore($players_ids[0], 0); // update DB
+                    $this->dbSetScore($players_ids[1], 0); // update DB
+
+                }
+            }
+        }
+        // send notif for the final score animation
+        self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
+    }
+
     public function test()
     {
-        $res = $this->getPlayerAfter( self::getActivePlayerId() );
+        $res = $this->checkMedalSuccess(7);
         print_r($res);
         $medal_id=81;
     }
@@ -1973,11 +2096,11 @@ class BigMonster extends Table
         $cards_checked = 0;
         foreach ($rem_cards as $card_id) {
             if (!in_array($card_id, $cards)) {
-                throw new BgaVisibleSystemException (clienttranslate("The card $card_id supposed to be in remaining cards is not in your hand ! Please reload the page (F5)."));
+                throw new BgaVisibleSystemException (clienttranslate('The card ${card_id} supposed to be in remaining cards is not in your hand ! Please reload the page (F5).'));
             }
         }
         if (!in_array($sel_card, $cards)) {
-            throw new BgaVisibleSystemException (clienttranslate("The selected card $sel_card is not in your hand ! Please reload the page (F5)."));
+            throw new BgaVisibleSystemException (clienttranslate('The selected card ${sel_card} is not in your hand ! Please reload the page (F5).'));
         }
         // check that target ship is not already selected
         $sql = "SELECT COUNT(*) FROM card WHERE card_location='onShip' AND card_location_arg=$ship_player_id";
@@ -2034,14 +2157,14 @@ class BigMonster extends Table
         $cards_checked = 0;
         foreach ($rem_cards as $card_id) {
             if (!in_array($card_id, $cards)) {
-                throw new BgaVisibleSystemException (clienttranslate("The card $card_id supposed to be in remaining cards is not in this row !"));
+                throw new BgaVisibleSystemException (clienttranslate('The card ${card_id} supposed to be in remaining cards is not in this row !'));
             }
         }
         if (count($rem_cards) + 1 != count($cards)) {
             throw new BgaVisibleSystemException (clienttranslate("Some cards are missing in hand or too much are in DB"));
         }
         if (!in_array($sel_card, $cards)) {
-            throw new BgaVisibleSystemException (clienttranslate("The selected card $sel_card is not in the selected row !"));
+            throw new BgaVisibleSystemException (clienttranslate('The selected card ${sel_card} is not in the selected row !'));
         }
         if ($sel_action == 0) {
             // selected card is to be played
@@ -2057,7 +2180,7 @@ class BigMonster extends Table
         } else {
             throw new BgaVisibleSystemException (clienttranslate("Wrong sel_action value !"));
         }
-        $sel_row = ($source_row == 1) ? 'upper' : 'lower';
+        $sel_row = ($source_row == 1) ? clienttranslate('upper') : clienttranslate('lower');
         $kind_monster = $this->custgetCard( $sel_card )['type'];
         $kind_monster_discard = $this->custgetCard( $rem_cards[0] )['type'];
         self::NotifyAllPlayers("SelectedTile", $log_msg ,array(
@@ -2068,7 +2191,8 @@ class BigMonster extends Table
             "card_id" => $sel_card,
             "action" => $sel_action,
             "monster_kind_name_dicard" => $this->tiles_info[$kind_monster_discard]['name'],
-            "discard_card_id" => $rem_cards[0])
+            "discard_card_id" => $rem_cards[0],
+            'i18n' => array( 'monster_kind_name' , 'row', 'monster_kind_name_dicard' ) )
         );
         if ($sel_action == 0) {
             self::setGameStateValue( 'active_row', $source_row );
@@ -2183,8 +2307,10 @@ class BigMonster extends Table
         foreach ($explorers_attr as $player_id  => $explorer_id) {
             $explo_ids = explode(",", $explorer_id['explorer_id']);
             for ($i=0; $i < count($explo_ids) ; $i++) {
-                $data['_private'][$player_id]['explorers'][$i] = array(  'explorer_id' => $explo_ids[$i],
-                'explorer_info' => $this->explorer_infos[$explo_ids[$i]]['descr']);
+                $data['_private'][$player_id]['explorers'][$i] = array(
+                    'explorer_id' => $explo_ids[$i],
+                    'explorer_info' => $this->explorer_infos[$explo_ids[$i]]['descr'],
+                    'i18n' => array( 'explorer_info' ));
             }
             if ($this->isTeamPlay()) {
                 $data['_private'][$player_id]['team'] =$team;
@@ -2356,11 +2482,12 @@ class BigMonster extends Table
             $explorers = self::getCollectionFromDB( $sql );
             self::dump( 'explorer_infos', $this->explorer_infos );
             foreach ($explorers as $player_id => $explorer_id) {
-                self::NotifyAllPlayers("selectedExplorers", clienttranslate('${player_name} selected ${explorer_name}'), array(
+                self::NotifyAllPlayers("selectedExplorers",clienttranslate('${player_name} selected ${explorer_name}'), array(
                     "player_name" => self::getPlayerNameById($player_id),
                     "explorer_name" => $this->explorer_infos[$explorer_id['explorer_id']]['name'],
                     "explorer_id" => $explorer_id['explorer_id'],
-                    "player_id" => $player_id)
+                    "player_id" => $player_id,
+                    'i18n' => array( 'explorer_name' ))
                 );
             }
             
@@ -2400,7 +2527,8 @@ class BigMonster extends Table
                     "player_name" => self::getPlayerNameById($player_id),
                     "explorer_name" => $this->explorer_infos[$explorer_id['explorer_id']]['name'],
                     "explorer_id" => $explorer_id['explorer_id'],
-                    "player_id" => $player_id)
+                    "player_id" => $player_id,
+                    'i18n' => array( 'explorer_name' ))
                 );
             }
             $this->activeNextPlayer();
@@ -2460,7 +2588,8 @@ class BigMonster extends Table
                 "type_monster" => $type_monster,
                 "kind_monster" => $last_played_cards[$card_id]['card_type_arg'],
                 "card_id" => $card_id,
-                "mutation_level" => $last_played_cards[$card_id]['mutation'])
+                "mutation_level" => $last_played_cards[$card_id]['mutation'],
+                'i18n' => array( 'monster_type_name' ))
             );
         }
         // 1.2 Notify users if a mutation happenned (after placement of mutegenic)
@@ -2555,7 +2684,8 @@ class BigMonster extends Table
                             "player_id" => $player_id,
                             "medal_id" => $medal_id,
                             "pts" => strval($pts),
-                            "back_id" => $back_id)
+                            "back_id" => $back_id,
+                            'i18n' => array( 'medal_name' ))
                         );
                     }
                 }
@@ -2678,6 +2808,7 @@ class BigMonster extends Table
     function st_pregameEnd() {
         // end of the game
         if ($this->isTeamPlay() and self::getPlayersNumber() == 5) {
+            // go directly to the end of the game if 5 players and team mode (not allowed configuration)
             $this->gamestate->nextState( 'gameEnd' );
         }
         // Check who get the "lowest" desert/rune medal
@@ -2694,7 +2825,8 @@ class BigMonster extends Table
                         "player_id" => $player_id,
                         "medal_id" => 7,
                         "pts" => $this->medals_infos[7]['pts'],
-                        "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']]
+                        "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']],
+                        'i18n' => array( 'medal_name' )
                     );
                     self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the "${medal_name}" medal!'), $notif_data);
                 }
@@ -2707,7 +2839,8 @@ class BigMonster extends Table
                     "player_id" => $player_id,
                     "medal_id" => 7,
                     "pts" => $this->medals_infos[7]['pts'],
-                    "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']]
+                    "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']],
+                    'i18n' => array( 'medal_name' )
                 );
                 self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the "${medal_name}" medal!'), $notif_data);
             }
@@ -2728,7 +2861,8 @@ class BigMonster extends Table
                             "player_id" => $player_id,
                             "medal_id" => 7*10+$i+1,
                             "pts" => $this->medals_infos[7]['pts'],
-                            "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']]
+                            "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']],
+                            'i18n' => array( 'medal_name' )
                         );
                         self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the "${medal_name}" medal!'), $notif_data);
                     }
@@ -2746,7 +2880,8 @@ class BigMonster extends Table
                         "player_id" => $player_id,
                         "medal_id" => 7*10+$i+1,
                         "pts" => $this->medals_infos[7]['pts'],
-                        "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']]
+                        "back_id" => $this->matching_pts_back_id[3][$this->medals_infos[7]['pts']],
+                        'i18n' => array( 'medal_name' )
                     );
                     self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} receives the "${medal_name}" medal!'), $notif_data);
                 }
@@ -2931,7 +3066,8 @@ class BigMonster extends Table
                     "card_id" => $sel_card,
                     "action" => 3,
                     "monster_kind_name_dicard" => $this->tiles_info[$kind_monster_discard]['name'],
-                    "discard_card_id" => $disc_card)
+                    "discard_card_id" => $disc_card,
+                    'i18n' => array( 'monster_kind_name', 'monster_kind_name_dicard' ))
                 );
                 self::setGameStateValue( 'active_row', $source_row );
                 $this->gamestate->nextState( 'var_placeTile' );

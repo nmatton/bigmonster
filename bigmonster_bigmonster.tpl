@@ -129,6 +129,11 @@
       <div id="{PLAYER_ID}_team_info" class='player_info_team tab' style="background-color:#AAAAA; display:none">TEAM 0</div>
     </div>
     <div id="{PLAYER_ID}_scrollmap" class="scrollerClass">
+      <div id="zoom_buttons">
+        <i class="fa fa-search-plus" style="font-size: 1.7em;"></i>
+        <i class="fa fa-search-minus" style="font-size: 1.7em;"></i>
+        <i class="fa fa-expand" style="font-size: 1.7em;margin: 2px;"></i>
+      </div>
       <div id="{PLAYER_ID}_scrollmap_noclick" class="scroller_noclick"> </div>
       <div class="scroller_surface">
         <div class="movedown"> </div>

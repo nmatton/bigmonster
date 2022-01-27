@@ -94,6 +94,14 @@ class Scroller
     this.zoom = 1.0;
     if (allowZoom)
       dojo.query("#"+namePrefix+"_scrollmap").connect('onwheel', this, 'onWheel');
+    
+    // in order to use the 2 following events handlers, the following code need to be added as child of {PLAYER_ID}_scrollmap
+    //<div id="zoom_buttons"><i class="fa fa-search-plus" style="font-size: 1.7em;"></i><i class="fa fa-search-minus" style="font-size: 1.7em;"></i><i class="fa fa-expand" style="font-size: 1.7em;margin: 2px;"></i></div>
+    // css : #zoom_buttons{position: absolute;top: 5px;right: 5px;width: 30px;height: 60px;display: flex;flex-wrap: wrap;justify-content: flex-end;z-index: 3;color: #efefefcf;}
+    dojo.query('#'+namePrefix+'_scrollmap > #zoom_buttons > i.fa.fa-search-plus').connect('onclick', this, 'onZoomIn');
+    dojo.query('#'+namePrefix+'_scrollmap > #zoom_buttons > i.fa.fa-search-minus').connect('onclick', this, 'onZoomOut');
+    dojo.query('#'+namePrefix+'_scrollmap > #zoom_buttons > i.fa.fa-expand').connect('onclick', this, 'onCenter');
+
   }
 
   // call with obj.moveIdToPos(this,"htmlId", x,y);
@@ -164,6 +172,78 @@ class Scroller
     this.zoom -= 0.1
     if (this.zoom < 0.2) this.zoom = 0.2;
     this.setScale();
+  }
+
+
+  // Centering function ---------------------------------------------------------------
+  // in order to use this function, the data-x and data-y attributes must be set on the html elements on the no-click surface
+  onCenter(evt)
+  {
+    // UPDATE POSITION
+    let containerChilds = document.getElementById(this.prefix+"_scrollmap_noclick").children;
+    let x_vals = [];
+    let yvals = [];
+    for ( let counter=0; counter < containerChilds.length; counter++)
+    {
+      let value_x = toint(containerChilds[counter].getAttribute("data-x"));
+      let value_y = toint(containerChilds[counter].getAttribute("data-y"));
+      x_vals.push(value_x);
+      yvals.push(value_y);
+    }
+    let max_x = Math.max.apply(Math, x_vals) *2 + 50;
+    let min_x = Math.min.apply(Math, x_vals) *2;
+    let max_y = Math.max.apply(Math, yvals) *2 +100;
+    let min_y = Math.min.apply(Math, yvals) *2;
+    debug("max_x="+max_x+" max_y="+max_y+" min_x="+min_x+" min_y="+min_y);
+    let center_x = (max_x + min_x)/2;
+    let center_y = (max_y + min_y)/2;
+    debug("center_x="+center_x+" center_y="+center_y);
+    if (max_y % 25 != 0 || min_y% 25 != 0) {
+      center_y -= 32
+      debug('correct center_y to '+center_y);
+    }
+    this.scrollTo(-center_x, -center_y);
+    // UPDATE ZOOM
+    // zoom 1 : contains 4 on Y  and 11 on X
+    // zoom 0.9 : contains 4 on Y and 12 on X
+    // zoom 0.8 : contains 5 on Y and 14 on X
+    // zoom 0.7 : contains 5 on Y and 16 on X
+    // zoom 0.6 : contains 6 on Y and 1? on X
+    // zoom 0.5 : contains 8 on Y and 1? on X
+    let ScrollerContainer = document.getElementById(this.prefix+'_scrollmap');
+    let containerWidth = ScrollerContainer.offsetWidth;
+    let containerHeight = ScrollerContainer.offsetHeight;
+    let n_y = (max_y - min_y) /100;
+    let n_x = (max_x - min_x) / 50;
+    debug("n_x="+n_x+" n_y="+n_y);
+    let zoom_x = 1;
+    let zoom_y = 1;
+    if (n_y <= 4) {
+      zoom_y = 1
+    } else if (4 < n_y && n_y <= 5) {
+      zoom_y = 0.8
+    } else if (5 < n_y && n_y <= 6) {
+      zoom_y = 0.6
+    } else if (6 < n_y && n_y <= 8) {
+      zoom_y = 0.5
+    } else if (n_y > 8) {
+      zoom_y = 0.4
+    }
+    if (n_x <= 11) {
+      zoom_x = 1
+    } else if (11 < n_x && n_x <= 12) {
+      zoom_x = 0.9
+    } else if (12 < n_x && n_x <= 14) {
+      zoom_x = 0.8
+    } else if (14 < n_x && n_x <= 16) {
+      zoom_x = 0.7
+    } else if (n_x > 16) {
+      zoom_x = 0.6
+    }
+    debug("zoom_x="+zoom_x+" zoom_y="+zoom_y);
+    let zoom = Math.min(zoom_x, zoom_y);
+    debug("zoom="+zoom);
+    this.setScale(zoom);
   }
 }
 

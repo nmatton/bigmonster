@@ -101,6 +101,7 @@ html {
 }
 @media only screen and (max-width: 504px) {
     .scrollmap_wrapper { width: 100%; }
+    .card_left_count {transform: scale(0.7);}
   }
 /* .scrollmap_player_info {
     display:flex;
@@ -179,6 +180,23 @@ padding-left: 4px;
     z-index: -1;
     margin-left: -25px;
     border-top-right-radius: 30px 70px;
+}
+
+#zoom_buttons{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 30px;
+    height: 60px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    z-index: 3;
+    color: #efefefcf;
+}
+
+#zoom_buttons > i.fa {
+    cursor: pointer;
 }
 
 .player_info_team:after{
@@ -883,9 +901,9 @@ box-shadow: 0 0 1px #2196F3;
 }
 
 input:checked + .bm_slider:before {
--webkit-transform: translateX(26px);
--ms-transform: translateX(26px);
-transform: translateX(26px);
+-webkit-transform: translateX(15px);
+-ms-transform: translateX(15px);
+transform: translateX(15px);
 }
 
 /* Rounded sliders */
