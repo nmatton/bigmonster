@@ -2096,17 +2096,17 @@ class BigMonster extends Table
         $cards_checked = 0;
         foreach ($rem_cards as $card_id) {
             if (!in_array($card_id, $cards)) {
-                throw new BgaVisibleSystemException (clienttranslate('The card ${card_id} supposed to be in remaining cards is not in your hand ! Please reload the page (F5).'));
+                throw new BgaVisibleSystemException ('The card ${card_id} supposed to be in remaining cards is not in your hand ! Please reload the page (F5).');
             }
         }
         if (!in_array($sel_card, $cards)) {
-            throw new BgaVisibleSystemException (clienttranslate('The selected card ${sel_card} is not in your hand ! Please reload the page (F5).'));
+            throw new BgaVisibleSystemException ('The selected card ${sel_card} is not in your hand ! Please reload the page (F5).');
         }
         // check that target ship is not already selected
         $sql = "SELECT COUNT(*) FROM card WHERE card_location='onShip' AND card_location_arg=$ship_player_id";
         $nb_cards_on_ship = self::getUniqueValueFromDB($sql);
         if ($nb_cards_on_ship > 0) {
-            throw new BgaVisibleSystemException (clienttranslate("There is already tiles on that player's ship. Please rload the page (F5)."));
+            throw new BgaVisibleSystemException (self::_("There is already tiles on that player's ship. Please reload the page (F5)."));
         }
         $current_turn = self::getGameStateValue( 'currentTurn' );
         // update position of remaining cards
