@@ -841,7 +841,7 @@ justify-content: space-between; */
     box-shadow: 0px 6px 18px -5px rgb(89, 78, 76);
 }
 
-/* switch */
+/** switch */
 
 .bm_faceSelector {
     display: flex;
@@ -915,7 +915,45 @@ border-radius: 34px;
 border-radius: 50%;
 }
 
-/* help modal */
+/**  Animation on tile in tooltip  */
+
+.tooltipWiggle {
+    -ms-flex-item-align: center;
+    align-self: center;
+    -webkit-animation: tooltipWiggle 2s infinite alternate;
+    animation: tooltipWiggle 2s infinite alternate;
+    box-shadow: 5px 5px 5px 0 rgb(0 0 0 / 40%), inset 0 0 0 1px #00000060;
+}
+@-webkit-keyframes tooltipWiggle {
+    0% {
+        -webkit-animation-timing-function: ease-in-out;
+        animation-timing-function: ease-in-out;
+        -webkit-transform: perspective(40em) rotateY(-18deg) scale(0.93);
+        transform: perspective(40em) rotateY(-18deg) scale(0.93);
+    }
+    to {
+        -webkit-animation-timing-function: ease-in-out;
+        animation-timing-function: ease-in-out;
+        -webkit-transform: perspective(40em) rotateY(-10deg) scale(0.93);
+        transform: perspective(40em) rotateY(-10deg) scale(0.93);
+    }
+}
+@keyframes tooltipWiggle {
+    0% {
+        -webkit-animation-timing-function: ease-in-out;
+        animation-timing-function: ease-in-out;
+        -webkit-transform: perspective(40em) rotateY(-18deg) scale(0.93);
+        transform: perspective(40em) rotateY(-18deg) scale(0.93);
+    }
+    to {
+        -webkit-animation-timing-function: ease-in-out;
+        animation-timing-function: ease-in-out;
+        -webkit-transform: perspective(40em) rotateY(-10deg) scale(0.93);
+        transform: perspective(40em) rotateY(-10deg) scale(0.93);
+    }
+}
+
+/** help modal */
 #help-icon {
 height: 35px;
 width: 35px;

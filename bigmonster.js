@@ -314,19 +314,7 @@ function (dojo, declare) {
                         var type = toint(card.type);
                         var kind_monster = toint(card.type_arg);
                         this.playerHand.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                        if ( [3,5,7].includes(type) ) {
-                            var monster_name = gamedatas.help_monsters[type]['name'];
-                            var monster_descr = gamedatas.help_monsters[type]['descr'];
-                        } else {
-                            var monster_name = gamedatas.help_monsters[type][kind_monster]['name'];
-                            var monster_descr = gamedatas.help_monsters[type][kind_monster]['descr'];
-                        }
-                        if (type == 2) {
-                            var rot = "transform: rotate(-90deg);"
-                        } else {
-                            var rot = '';
-                        }
-                        this.addTooltipHtml( 'myhand_item_'+card.id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile' style='background-position: -"+(kind_monster-1)*100+"% -"+(type-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", 10 );
+                        this.setTileToolTip(card.id, type, kind_monster);
                     }
                     // add listeners on cards on hand
                     dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -371,33 +359,36 @@ function (dojo, declare) {
                         var kind_monster = card.type_arg;
                         if (toint(row) == 1) {
                             this.upper_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                            this.setTileToolTip(card.id, type, kind_monster, 'upper_row');
                         } else if (toint(row) == 2) {
                             this.lower_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                            this.setTileToolTip(card.id, type, kind_monster, 'lower_row');
                         } else {
                             // row is equal to player ID => selected card
                             if (toint(this.active_row) == 1) {
                                 var tilerow = this.upper_row;
-                                var rowname = 'upper';
+                                var rowname = 'upper_row';
                             } else {
                                 var tilerow = this.lower_row;
-                                var rowname = 'lower';
+                                var rowname = 'lower_row';
                             }
                             tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                            dojo.addClass(rowname + '_row_item_'+card.id , 'selected');
-                            dojo.addClass(rowname + '_row_item_'+card.id , 'disabled');
+                            dojo.addClass(rowname + '_item_'+card.id , 'selected');
+                            dojo.addClass(rowname + '_item_'+card.id , 'disabled');
+                            this.setTileToolTip(card.id, type, kind_monster, rowname);
                             this.selected_tile_id = toint(card.id);
                             this.changePageTitle('discard');
                             this.selected_tile_type = card.type;
-                            // disable the other row
                         }
                     }
                     // bottom row
-                    for ( var i in this.gamedatas.tiles_lower_row) {
-                        var card = this.gamedatas.tiles_lower_row[i];
-                        var type = card.type;
-                        var kind_monster = card.type_arg;
+/*                     for ( var i in this.gamedatas.tiles_lower_row) {
+                        let card = this.gamedatas.tiles_lower_row[i];
+                        let type = card.type;
+                        let kind_monster = card.type_arg;
                         this.lower_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                    }
+                        this.setTileToolTip(card.id, type, kind_monster,'lower_row');
+                    } */
                     dojo.connect( this.upper_row, 'onChangeSelection', this, 'onTileInRowSelection' );
                     dojo.connect( this.lower_row, 'onChangeSelection', this, 'onTileInRowSelection' );
                     if (toint(this.active_row) == 1) {
@@ -1123,6 +1114,23 @@ function (dojo, declare) {
             }
         },
         
+        setTileToolTip: function(id, type, kind_monster, location='myhand') {
+            debug('add tooltip to '+id+' with type : '+type+' and kind : '+kind_monster);
+            if ( [3,5,7].includes(toint(type)) ) {
+                var monster_name = this.gamedatas.help_monsters[toint(type)]['name'];
+                var monster_descr = this.gamedatas.help_monsters[toint(type)]['descr'];
+            } else {
+                var monster_name = this.gamedatas.help_monsters[toint(type)][toint(kind_monster)]['name'];
+                var monster_descr = this.gamedatas.help_monsters[toint(type)][toint(kind_monster)]['descr'];
+            }
+            if (toint(type) == 2) {
+                var rot = "transform: rotate(-90deg);"
+            } else {
+                var rot = '';
+            }
+            this.addTooltipHtml( location+'_item_'+id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile tooltipWiggle' style='background-position: -"+(toint(kind_monster)-1)*100+"% -"+(toint(type)-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", 10 );    
+        },
+
         tileHtml: function(e, id, s, t, b=0, i=0, m=0) {
             /* 
                 Generate Html code to insert a tile on a board
@@ -2185,20 +2193,7 @@ function (dojo, declare) {
                 var type = toint(card.type);
                 var kind_monster = toint(card.type_arg);
                 this.playerHand.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                debug('type : '+ type + ' and kind : ' + kind_monster + ' with id : ' + card.id);
-                if ( [3,5,7].includes(type) ) {
-                    var monster_name = this.gamedatas.help_monsters[type]['name'];
-                    var monster_descr = this.gamedatas.help_monsters[type]['descr'];
-                } else {
-                    var monster_name = this.gamedatas.help_monsters[type][kind_monster]['name'];
-                    var monster_descr = this.gamedatas.help_monsters[type][kind_monster]['descr'];
-                }
-                if (type == 2) {
-                    var rot = "transform: rotate(-90deg);"
-                } else {
-                    var rot = '';
-                }
-                this.addTooltipHtml( 'myhand_item_'+card.id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile' style='background-position: -"+(kind_monster-1)*100+"% -"+(type-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", 10 );
+                this.setTileToolTip(card.id, type, kind_monster);
             }
             if (cards.length == 2) {
                 this.lastTurn = true;
@@ -2212,11 +2207,13 @@ function (dojo, declare) {
             var cards = s.cards;
             if (toint(s.updated_row) > 0) {
                 var tilerow = (toint(s.updated_row) == 1) ? this.upper_row : this.lower_row;
+                var rowname = (toint(s.updated_row) == 1) ? 'upper_row' : 'lower_row';
                 for (var i in cards) {
                     var card = cards[i];
                     var type = card.type;
                     var kind_monster = card.type_arg;
                     tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                    this.setTileToolTip(card.id, type, kind_monster, rowname);
                 }
             } else {
                 for (var loc of ['upper', 'lower']) {
@@ -2227,6 +2224,7 @@ function (dojo, declare) {
                         var type = card.type;
                         var kind_monster = card.type_arg;
                         tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                        this.setTileToolTip(card.id, type, kind_monster, loc_cards+'_row');
                     }
                 }
                 // update the number of cards remaing (extra from new turn since 2 rows are updated here)
@@ -2406,10 +2404,10 @@ function (dojo, declare) {
                 debug('added the html snippet to the board');
                 if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let rowname = (this.active_row == 1) ? 'upper_row' : 'lower_row';
-                    tideId = rowname+"_item_"+s.card_id;
-                    clone_tile = $(tideId).cloneNode()
-                    clone_tile.id = 'clone_'+tideId;
-                    tideId = 'clone_'+tideId;
+                    tileId = rowname+"_item_"+s.card_id;
+                    clone_tile = $(tileId).cloneNode()
+                    clone_tile.id = 'clone_'+tileId;
+                    tileId = 'clone_'+tileId;
                     dojo.place(clone_tile,rowname); //upper_row_item_97
                 } else {
                     let tmptileDiv = this.format_block('jstpl_tmp_tile', {
@@ -2419,9 +2417,9 @@ function (dojo, declare) {
                         rot: rot
                     });
                     dojo.place( tmptileDiv, "overall_player_board_"+s.player_id, "first" );
-                    tideId = "tmp_tile_"+s.card_id;
+                    tileId = "tmp_tile_"+s.card_id;
                 }
-                this.slideToObjectAndDestroy( tideId , phantomId, 1000, 0 );
+                this.slideToObjectAndDestroy( tileId , phantomId, 1000, 0 );
                 debug('slided the tile to the phantom place');
                 setInterval(dojo.destroy("phantomplace_"+s.x+"*"+s.y), 1100);
                 debug('destroyed the phantom place');
