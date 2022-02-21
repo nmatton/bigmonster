@@ -210,12 +210,21 @@ padding-left: 4px;
 }
 
 /** ships **/
+.ship_wrapper{
+    transition: all 1s;
+    transform: scale(0.8);
+}
 
 .bm_flex-container {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+    background-color: rgba(224, 232, 255, .56);
+    border: white solid 1px;
+    padding: 5px;
+    min-height: 186px;
+    width: 26vw;
   }
   
 .bm_flex-container > div {
@@ -252,6 +261,34 @@ padding-left: 4px;
 @keyframes blink { 
     50% { outline: 3px dashed #fff; } 
  }
+
+ .ship_wrapper.bm_retracted {
+    transform: rotate(-90deg) scale(0.8);
+    position: absolute;
+    right: 0px;
+    transform-origin: bottom right;
+}
+
+.bm_retracted_ships {
+    min-height: 0px;
+    height: 0px;
+    overflow: hidden;
+    width: 0px;
+    padding: 0px;
+    border: none;
+}
+
+.bm_transparent_ships {
+    opacity: 0;
+}
+
+.bm_hidden_ships {
+    display: none;
+}
+
+#ships {
+    transition: all 1s;
+}
 
 /** Tiles on the boards (not in deck) **/
 
@@ -419,13 +456,14 @@ padding-left: 4px;
 .handmedal_area{
     display: flex;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: space-evenly;
+    align-items: center;
 }
 
   /** Hand **/
 
   .hand_wrapper{
-    min-width: 60%;
+    min-width: 35%;
     max-width: 710px;
   }
 
@@ -1250,12 +1288,17 @@ background-size: 1180%;
     z-index:-5;
   }
   
+  /* commented out due to some perf issue 
+
   #stars1 {
-    animation:space 2600s linear infinite;
+    animation:space 2600s linear infinite; 
   }
+
+  */
   
   #stars2 {
-    animation:space2 2600s linear infinite;
+    /* commented out due to some perf issue */
+    /* animation:space2 2600s linear infinite; */
     transform: rotate(90deg);
   }
   

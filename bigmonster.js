@@ -203,6 +203,8 @@ function (dojo, declare) {
 
             if (this.isReadOnly() && typeof g_replayFrom == 'undefined' && !g_archive_mode) {
                 dojo.destroy('myhand_wrap');
+                dojo.query('.hand_wrapper').style('display','none')
+                debug('spector mode');
 /*                 let oldParent = document.getElementById('Boards');
                 let newParent = document.getElementById('MainBoardArea');
                 while (oldParent.childNodes.length) { 	newParent.appendChild(oldParent.firstChild); } */
@@ -291,7 +293,7 @@ function (dojo, declare) {
                     dojo.destroy('card_left_count');
                     // remove "gridded" class
                     dojo.query('#myhand_area').removeClass('bm_gridded')
-                    // ADD A COUNTER OF ROUND : TODO !
+                    //TODO: ADD A COUNTER OF ROUND
                     this.playerHand = new ebg.stock(); // new stock object for hand
                     this.playerHand.create( this, $('myhand'), this.tiledwidth, this.tileheight );
                     this.playerHand.setSelectionMode( 1 ) // only one card at a time can be selected
@@ -530,6 +532,9 @@ function (dojo, declare) {
             for (o = Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
                 dojo.query("div#ship_" + Object.keys(gamedatas.players)[o]).connect("onclick", this, "onClickShipTile")
             }
+            // ** add listeners on expand/reduce ship area ** //
+             dojo.connect( $('reduce_ships'), 'onclick', this, 'onClickCloseShipArea' );
+            dojo.connect( $('expand_ships'), 'onclick', this, 'onClickOpenShipArea' );
 
             
             // ** set the selectable status of ships ** //
@@ -922,12 +927,14 @@ function (dojo, declare) {
 */
                     case 'placeTile':
                         if (this.tile_selected) {
+                            dojo.empty('customActions');
                             this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton', 'customActions' );
                         }
                         break;
                     case 'teamSelection' :
                         if (this.isTeamPlay) {
                             debug(this.gamedatas)
+                            dojo.empty('customActions');
                             Object.values(this.gamedatas.playerorder).forEach(t => {
                                 if (t != this.player_id) {
                                     this.addActionButton('buttonSelectPlayer' + t, this.coloredPlayerName(this.gamedatas.players[t].name), () => this.selectTeamPlayer(t), 'customActions');
@@ -948,6 +955,24 @@ function (dojo, declare) {
             script.
         
         */
+
+        /* 
+        * Manage open and closing ship area
+        */
+
+        onClickOpenShipArea() {
+            dojo.query('.ship_wrapper').toggleClass('bm_retracted');
+            setTimeout(()=>{dojo.query('#ships').toggleClass('bm_hidden_ships');dojo.query('#ships').toggleClass('bm_transparent_ships')},1000)
+             dojo.query('#reduce_ships').style('display', 'inline');
+            dojo.query('#expand_ships').style('display', 'none'); 
+        },
+
+        onClickCloseShipArea() {
+            dojo.query('#ships').toggleClass('bm_transparent_ships');
+            setTimeout(()=>{dojo.query('#ships').toggleClass('bm_hidden_ships');dojo.query('.ship_wrapper').toggleClass('bm_retracted')},1000)
+            dojo.query('#reduce_ships').style('display', 'none');
+            dojo.query('#expand_ships').style('display', 'inline');
+        }, 
 
         /*
         * Add a timer on an action button :
