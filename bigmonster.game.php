@@ -37,6 +37,7 @@ class BigMonster extends Table
                          "active_row" => 13,
                          "first_player" => 14,
                          "teamdefined" => 15,
+                         "explotileplacement" => 16,
                          "playmode" => 101,
                          "hidescore" => 102,
                          '3pdraft' => 103) );
@@ -87,6 +88,8 @@ class BigMonster extends Table
         self::setGameStateInitialValue( 'currentTurn', 0 );
         self::setGameStateInitialValue( 'teamdefined', 0 ); // 0 = team not defined, 1 = team defined
         self::setGameStateInitialValue( 'active_row', 0 ); // usefull for 2 and 3 players mode - active row of tile (where user can pick a card). 1 = top row; 2 = bottom row
+        self::setGameStateInitialValue( 'explotileplacement', 0 ); // set to 1 when 19th tile is being placed
+        
         // Create cards
         $cards = array ();
         foreach ( $this->tiles_info as $type_id => $tile_type ) {
@@ -2254,7 +2257,7 @@ class BigMonster extends Table
         $current_state = $this->getStateName();
         //var_dump(self::getPlayersNumber());
         if ($current_state == 'bmExploTilePlacement') {
-            $this->gamestate->nextState( 'pregameEnd' );
+            $this->gamestate->nextState( 'endTurn' );
         } elseif (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())){
             //var_dump('GO TO VAR END TURN !!!');
             $this->gamestate->nextState( 'var_endTurn' );
@@ -2777,13 +2780,15 @@ class BigMonster extends Table
                 // If the explorer 3 is in game, let him to place a tile from the discard pile (bmExploTileSelection state)
                 $sql = "SELECT player_id FROM explorers WHERE selected = 1 AND explorer_id = 3";
                 $player_id = $this->getUniqueValueFromDB($sql);
-                if (!is_null($player_id)) {
+                if (!is_null($player_id) and self::getGameStateValue( 'explotileplacement' ) == 0) {
                     // activate the player
                     $this->gamestate->changeActivePlayer( $player_id );
                     // add time to that player
                     self::giveExtraTime($player_id);
                     // move all tiles from discard to the hand of the player
                     $this->cards->moveAllCardsInLocation('discard', 'hand', null, $player_id);
+                    // update global var that logged that the 19th tile placement has been done
+                    self::setGameStateValue( 'explotileplacement', 1 );
                     // move to specific state
                     $this->gamestate->nextState( 'bmExploTileSelection' );
                 } else {

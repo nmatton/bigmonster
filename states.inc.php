@@ -111,7 +111,7 @@ $machinestates = array(
         "possibleactions" => array( "placeTile" ),
         "action" => "st_bmExploTilePlacement",
         "args" => "argbmExploTilePlacement",
-        "transitions" => array( "pregameEnd" => 98, "zombiePass" => 98 )
+        "transitions" => array( "endTurn" => 7, "zombiePass" => 98 )
     ),
 
     10 => array(
