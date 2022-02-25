@@ -2814,6 +2814,7 @@ class BigMonster extends Table
         // Check who get the "lowest" desert/rune medal
         if (!$this->isTeamPlay()) {
             $lowest_player = $this->checkMedalSuccess(7);
+            if (count($lowest_player) == self::getPlayersNumber()) $lowest_team = array(); # noone gets the medals since all are at min
             if (count($lowest_player) > 1) {
                 $player_id_list = implode(',',$lowest_player);
                 $this->setMedalAttribution($player_id_list, 7);
@@ -2847,6 +2848,7 @@ class BigMonster extends Table
         }
         else {
             $lowest_team = $this->checkMedalSuccess(7);
+            if (count($lowest_team) == self::getPlayersNumber()/2) $lowest_team = array(); # noone gets the medals since all are at min
             if (count($lowest_team) > 1) {
                 // multiple teams are tied on the medal
                 $lowest_medal_attrib = array('71' => '', '72' => '');
