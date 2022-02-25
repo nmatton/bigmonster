@@ -1406,7 +1406,7 @@ class BigMonster extends Table
                 }
                 break;
             case 4:
-                // indiv : 6 ice tiles -- team : 12 ice tiles
+                // indiv : 6 ice tiles -- team : 8 ice tiles
                 if ($teamid == -1) {
                     $explorer_infos = $this->getExplorer();
                     $nbr_ice_tiles = count($this->custgetCardsOfTypeInLocation(1,null,'board',$player_id));
@@ -1419,7 +1419,7 @@ class BigMonster extends Table
                 } else if ($this->isTeamPlay() and !$get_details and $teamid > -1) {
                     $team_player_ids = $this->getTeamPlayers($teamid);
                     $tot_ice_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
-                    if ($tot_ice_tiles >= 12) {
+                    if ($tot_ice_tiles >= 8) {
                         return true;
                     }
                 } else if($get_details){
