@@ -293,7 +293,14 @@ class BigMonster extends Table
         $p_stats = $this->getStatList();
         foreach ($p_stats as $stat_name) {
             //var_dump($stat_name);
-            self::initStat( "player" , $stat_name, 0 );
+            if (($stat_name == "pts_team" and $this->isTeamPlay()) or $stat_name != "pts_team") {
+                self::initStat( "player" , $stat_name, 0 );
+            }
+        }
+        if ($this->isTeamPlay()) {
+            self::initStat( "table" , "is_team", true );
+        } else{
+            self::initStat( "table" , "is_team", false );
         }
 
        
@@ -467,6 +474,7 @@ class BigMonster extends Table
             // organise stats results
             $player_stat_results = array(
                 "explorer" => $this->getUniqueValueFromDB("SELECT explorer_id FROM explorers WHERE player_id = $player_id AND selected = 1"),
+                "pts_total" => $score['score'],
                 "pts_ice" => $score['ice'],
                 "pts_bm" => $score['bigmonster'],
                 "pts_lava" => $score['lava'] ,
@@ -2000,6 +2008,8 @@ class BigMonster extends Table
     {
         return array(
             "explorer",
+            "pts_total",
+            "pts_team",
             "pts_ice",
             "pts_bm",
             "pts_lava",
@@ -2907,6 +2917,7 @@ class BigMonster extends Table
             // organise stats results
             $player_stat_results = array(
                 "explorer" => $this->getUniqueValueFromDB("SELECT explorer_id FROM explorers WHERE player_id = $player_id AND selected = 1"),
+                "pts_total" => $score['score'],
                 "pts_ice" => $score['ice'],
                 "pts_bm" => $score['bigmonster'],
                 "pts_lava" => $score['lava'] ,
@@ -2933,6 +2944,11 @@ class BigMonster extends Table
         if ($this->isTeamPlay()) {
             $team_scores = $this->computeTeamScore($breakdowns);
             $winning_team = array_keys($team_scores,max($team_scores));
+            foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+                #set stat of team score
+                $pteam = $this->get_teams()[$player_id];
+                self::setStat( $team_scores[$pteam], "pts_team", $player_id );
+            }
         } else {
             $team_scores = array();
             $winning_team = array();

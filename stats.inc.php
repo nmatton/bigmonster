@@ -76,6 +76,12 @@ $stats_type = array(
         "explorer" => array("id"=> 10,
                     "name" => totranslate("Explorer"),
                     "type" => "int" ),
+        "pts_total" => array("id"=> 22,
+                    "name" => totranslate("Final Score"),
+                    "type" => "int" ),
+        "pts_team" => array("id"=> 23,
+                    "name" => totranslate("Final Team Score"),
+                    "type" => "int" ),
         "pts_ice" => array("id"=> 11,
                     "name" => totranslate("Points of ice tiles"),
                     "type" => "int" ),
@@ -109,7 +115,15 @@ $stats_type = array(
         "nbr_green" => array("id"=> 21,
                     "name" => totranslate("Number of green diamonds"),
                     "type" => "int" )
+        
     
+    ),
+
+    "table" => array(
+        "is_team" => array("id"=> 24,
+                    "name" => totranslate("Is a team play"),
+                    "type" => "bool",
+                    "display" => "limited")
     ),
 
     "value_labels" => array(
