@@ -955,7 +955,28 @@ function (dojo, declare) {
             script.
         
         */
-
+            notif_loadBug: function (n) {
+                function fetchNextUrl() {
+                  var url = n.args.urls.shift();
+                  console.log('Fetching URL', url);
+                  dojo.xhrGet({
+                    url: url,
+                    load: function (success) {
+                      // This could be improved, I don't check the response for errors
+                      console.log('Success for URL', url, success);
+                      if (n.args.urls.length > 0) {
+                        fetchNextUrl();
+                      } else {
+                        console.log('Done, reloading page');
+                        window.location.reload();
+                      }
+                    }
+                  });
+                }
+            
+                console.log('Notif: load bug', n.args);
+                fetchNextUrl();
+              },
         /* 
         * Manage open and closing ship area
         */
