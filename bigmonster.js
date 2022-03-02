@@ -1707,14 +1707,18 @@ function (dojo, declare) {
         onClickShipTile: function(s) {
             var t = parseInt(s.target.id.split("_")[1]);
             dojo.stopEvent(s);
-            this.sendCardToShip(t);
+            if (this.gamedatas.gamestate.name == "tileSelection") {
+                this.sendCardToShip(t);   
+            }
         },
 
         onClickExplo: function(s) {
             var parent_id = $(s.target.id).parentNode.id;
             var t = parseInt(parent_id.split("_")[0]);
             dojo.stopEvent(s);
-            this.sendCardToShip(t);
+            if (this.gamedatas.gamestate.name == "tileSelection") {
+                this.sendCardToShip(t);
+            }
         },
 
         onPlayerHandSelectionChanged : function(s) {
