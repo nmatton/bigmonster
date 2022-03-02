@@ -2136,7 +2136,7 @@ function (dojo, declare) {
          {
             debug(notif);
             let breakdowns = notif.args.breakdowns;
-            let winnerIds = [toint(notif.args.winner_ids)];
+            let winnerIds = notif.args.winner_ids;
             if (this.isTeamPlay) {
                 teamscores = notif.args.team_scores;
                 teamwinId = notif.args.winning_team;
@@ -2197,12 +2197,17 @@ function (dojo, declare) {
                     teamid = teamwinId[i];
                     for (let j in this.teams_ordered[teamid]) {
                         player_id = this.teams_ordered[teamid][j];
+                        debug("single team win")
                         debug(player_id)
                         setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),teamid), currentTime);
                     }
                 }
             } else {
-                setTimeout(this.setScoringRowWinner.bind(this, winnerIds), currentTime);
+                for (let i in winnerIds) {
+                    player_id = winnerIds[i];
+                    debug(player_id)
+                    setTimeout(this.setScoringRowWinner.bind(this, toint(player_id)), currentTime);
+                }
             }
          },
 

@@ -556,6 +556,7 @@ class BigMonster extends Table
     public function sendScoreBoard()
     {
         
+        
         // set stats and compute total scores
         $breakdowns = array();
         foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
@@ -582,19 +583,25 @@ class BigMonster extends Table
                 "nbr_green" => $diams['green']);
                 $p_stats = $this->getStatList();
             foreach ($p_stats as $stat_name) {
-                self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
+                if ($stat_name != "pts_team") {
+                    self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
+                }
             }
             // set the tie-breaker score
             self::DbQuery( "UPDATE player SET player_score_aux = ".$score['bigmonster']." WHERE player_id='".$player_id."'" );
         }
         
-        // TODO : In theory there can be multiple...
-        $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
+        $winner_id = array_keys(self::getNonEmptyCollectionFromDB( "SELECT sq1.player_id FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq1 WHERE sq1.player_score_aux = (SELECT max(sq2.player_score_aux) FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq2)" ));
         
         // compute team score if teamode is enabled
         if ($this->isTeamPlay()) {
             $team_scores = $this->computeTeamScore($breakdowns);
             $winning_team = array_keys($team_scores,max($team_scores));
+            foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+                #set stat of team score
+                $pteam = $this->get_teams()[$player_id];
+                self::setStat( $team_scores[$pteam], "pts_team", $player_id );
+            }
         } else {
             $team_scores = array();
             $winning_team = array();
@@ -3025,14 +3032,16 @@ class BigMonster extends Table
                 "nbr_green" => $diams['green']);
                 $p_stats = $this->getStatList();
             foreach ($p_stats as $stat_name) {
-                self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
+                if ($stat_name != "pts_team") {
+                    self::setStat( $player_stat_results[$stat_name], $stat_name, $player_id );
+                }
             }
             // set the tie-breaker score
             self::DbQuery( "UPDATE player SET player_score_aux = ".$score['bigmonster']." WHERE player_id='".$player_id."'" );
         }
         
-        // TODO : In theory there can be multiple...
-        $winner_id = self::getUniqueValueFromDB( "SELECT player_id FROM player ORDER BY player_score DESC, player_score_aux DESC LIMIT 1" );
+        // get array of winners ids
+        $winner_id = array_keys(self::getNonEmptyCollectionFromDB( "SELECT sq1.player_id FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq1 WHERE sq1.player_score_aux = (SELECT max(sq2.player_score_aux) FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq2)" ));
         
         // compute team score if teamode is enabled
         if ($this->isTeamPlay()) {
@@ -3049,7 +3058,7 @@ class BigMonster extends Table
         }
         if (count($winning_team) > 1) {
             // more than 1 team won -> check 1st tie-breaker : the best score of the 2nd teams' member
-            $tie_scores_tmp = $this->computeTeamScore($breakdowns, true);
+            $tie_scores_tmp = $this->computeTeamScore($breakdowns, true); // true param is for tie (get highest score of the team)
             $tie_scores = array();
             foreach ($winning_team as $tied_team) {
                 $tie_scores[$tied_team] = $tie_scores_tmp[$tied_team];
@@ -3073,12 +3082,38 @@ class BigMonster extends Table
                         self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
                         self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
                     }
+                    // set tie score to 0 for other teams
+                    $looser_teams= array();
+                    foreach ($this->get_teams() as $val) {
+                        if(!in_array($val, $winning_team)){
+                            array_push($looser_teams,$val);
+                        }
+                    }
+                    foreach ($looser_teams as $looser_team) {
+                        $team_player_ids = $this->getTeamPlayers($looser_team);
+                        $tiescore = $tie_scores[$looser_team];
+                        self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[0]."'" );
+                        self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[1]."'" );
+                    }
                 } else {
                     // one team won with the 2nd tie-breaker : record to DB
                     $team_player_ids = $this->getTeamPlayers($winning_team);
                     $tiescore = $tie_scores[$winning_team];
                     self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
                     self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                    // set tie score to 0 for other teams
+                    $looser_teams= array();
+                    foreach ($this->get_teams() as $val) {
+                        if(!in_array($val, $winning_team)){
+                            array_push($looser_teams,$val);
+                        }
+                    }
+                    foreach ($looser_teams as $looser_team) {
+                        $team_player_ids = $this->getTeamPlayers($looser_team);
+                        $tiescore = $tie_scores[$looser_team];
+                        self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[0]."'" );
+                        self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[1]."'" );
+                    }
                 }
             } else {
                 // record tie-breaker score to DB
@@ -3086,7 +3121,38 @@ class BigMonster extends Table
                 $tiescore = $tie_scores[$winning_team];
                 self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[0]."'" );
                 self::DbQuery( "UPDATE player SET player_score_aux = ".$tiescore." WHERE player_id='".$team_player_ids[1]."'" );
+                // set tie score to 0 for other teams
+                $looser_teams= array();
+                foreach ($this->get_teams() as $val) {
+                    if(!in_array($val, $winning_team)){
+                        array_push($looser_teams,$val);
+                    }
+                }
+                foreach ($looser_teams as $looser_team) {
+                    $team_player_ids = $this->getTeamPlayers($looser_team);
+                    $tiescore = $tie_scores[$looser_team];
+                    self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[0]."'" );
+                    self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[1]."'" );
+                }
             }
+        } else {
+            // one team won, no tie-breaker : record to DB
+            $team_player_ids = $this->getTeamPlayers($winning_team);
+            self::DbQuery( "UPDATE player SET player_score_aux = 1 WHERE player_id='".$team_player_ids[0]."'" );
+            self::DbQuery( "UPDATE player SET player_score_aux = 1 WHERE player_id='".$team_player_ids[1]."'" );
+            // set tie score to 0 for other teams
+            $looser_teams= array();
+            foreach ($this->get_teams() as $val) {
+                if(!in_array($val, $winning_team)){
+                    array_push($looser_teams,$val);
+                }
+            }
+            foreach ($looser_teams as $looser_team) {
+                $team_player_ids = $this->getTeamPlayers($looser_team);
+                self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[0]."'" );
+                self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[1]."'" );
+            }
+
         }
         $notif_data = array(
             "breakdowns" => $breakdowns,
