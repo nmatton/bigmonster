@@ -507,17 +507,17 @@ function (dojo, declare) {
             // ** HELP AND OPTION ** //
 
             if (this.isSpectator) {
-                dojo.place(jstmp_medal_face_select, document.querySelector('.player-board.spectator-mode'));
-                dojo.place(jstpl_helpIcon, document.querySelector('.player-board.spectator-mode'));
+                dojo.place(jstpl_settings, document.querySelector('.player-board.spectator-mode'))
                 dojo.query('.player-board.spectator-mode .roundedbox_main').style('display', 'none');
             } else {
-                dojo.place(jstmp_medal_face_select, 'ma_' + this.player_id);
-                dojo.place(jstpl_helpIcon, 'ma_' + this.player_id);
+                dojo.place(jstpl_settings, 'ma_' + this.player_id, 'after');
 
             }
             dojo.connect($('help-icon'), 'click', () => this.displayPlayersHelp(this.nums_of_players));
             let chk = $('face_select');
             dojo.connect(chk, 'onchange', () => this.toggleMedalFace());
+            let center_btn = $('general_center_btn');
+            dojo.connect(center_btn, 'click', () => this.onScreenWidthChange());
 
             // add button to show front/back
             /*  this code might be usefull...
@@ -552,6 +552,7 @@ function (dojo, declare) {
                 this.addTooltip('card_left_count',_('remaing pile of cards (i.e. the number of remaining turns)'),'',50)
             }
             this.addTooltip('face_select',_('toggle side of medals'),'',50)
+            this.addTooltip('general_center_btn',_('center all play zones'),'',50)
             this.addTooltip('help-icon', '', _('Display game help'));
 
             // Setup game notifications to handle (see "setupNotifications" method below)
@@ -1068,13 +1069,8 @@ function (dojo, declare) {
             dojo.style('right-side-first-part', 'zoom', '');
             // recentering play areras
             if (typeof this.boards !== 'undefined') {
-                /* if ($('MainBoardArea').offsetWidth < 650) {
-                    dojo.query('.scrollerClass').style('width','90%')
-                } else {
-                    dojo.query('.scrollerClass').style('width','46%')
-                } */
                 for (var t of Object.keys(this.gamedatas.players)) {
-                    if(this.boards.length > 0) this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
+                    if(this.boards.length > 0) this.boards[t].onCenter()
                 }
             }
         },

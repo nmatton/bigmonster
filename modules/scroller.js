@@ -179,6 +179,7 @@ class Scroller
   // in order to use this function, the data-x and data-y attributes must be set on the html elements on the no-click surface
   onCenter(evt)
   {
+    //evt.preventDefault()
     // UPDATE POSITION
     let containerChilds = document.getElementById(this.prefix+"_scrollmap_noclick").children;
     let x_vals = [];

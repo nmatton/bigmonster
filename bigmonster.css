@@ -881,6 +881,13 @@ justify-content: space-between; */
 
 /** switch */
 
+/* https://www.wfonts.com/download/data/2014/12/30/harlow-solid-italic/HARLOWSI.TTF */
+
+@font-face {
+    font-family: 'harlow-solid-italic-italic';
+    src: local("Harlow Solid Italic"), url(https://www.wfonts.com/download/data/2014/12/30/harlow-solid-italic/HARLOWSI.TTF) format('ttf');
+  }
+
 .bm_faceSelector {
     display: flex;
     flex-direction: row;
@@ -991,12 +998,19 @@ border-radius: 50%;
     }
 }
 
+/** settings **/
+.bm_settings{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
 /** help modal */
 #help-icon {
-height: 35px;
-width: 35px;
-margin-left: auto;
-cursor: pointer; }
+    height: 35px;
+    width: 35px;
+    cursor: pointer; }
+
 #help-icon:hover {
     color: grey; }
 #help-icon svg {
