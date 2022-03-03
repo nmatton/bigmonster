@@ -2493,7 +2493,7 @@ function (dojo, declare) {
                     this.playerHand.removeFromStockById( s.card_id );
                 }
             }
-
+            this.onScreenWidthChange(); // reset view of all play zone (center them)
         },
 
         notif_ZombiePlayedTile : function (notif) {
