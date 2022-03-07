@@ -2139,7 +2139,7 @@ function (dojo, declare) {
              }
            },
        
-          setScoringRowWinner: function(player_id, teamid=0) {
+          setScoringRowWinner: function(player_id, teamid=0, bd = breakdowns) {
             dojo.addClass($('scoring-row-name-p' + player_id), 'wavetext');
             
             let stages = ['ice', 'bigmonster', 'lava', 'grassland', 'swamp', 'diamonds', 'explorer', 'medal', 'total'];
@@ -2149,6 +2149,11 @@ function (dojo, declare) {
             }
             if (this.isTeamPlay) {
                 dojo.style($('scoring-row-team-t' + teamid), {'backgroundColor': 'rgba(255, 215, 0, 0.3)'});
+            }
+            if (this.hidescore) {
+                for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
+                    $('player_score_' + pid).innerHTML=bd[pid]['total'];
+                }
             }
            },
          
@@ -2226,14 +2231,14 @@ function (dojo, declare) {
                         player_id = this.teams_ordered[teamid][j];
                         debug("single team win")
                         debug(player_id)
-                        setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),teamid), currentTime);
+                        setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),teamid, breakdowns), currentTime);
                     }
                 }
             } else {
                 for (let i in winnerIds) {
                     player_id = winnerIds[i];
                     debug(player_id)
-                    setTimeout(this.setScoringRowWinner.bind(this, toint(player_id)), currentTime);
+                    setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),0,breakdowns), currentTime);
                 }
             }
          },
