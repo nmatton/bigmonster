@@ -49,6 +49,7 @@ function (dojo, declare) {
             this.selected_tile_id = 0; // id of the selected tile (in 2-3 players)
             this.active_row = 0; // row that can be selected (0 = both; 1 = upper; 2 = lower) (in 2-3 players)
             this.selected_tile_type = 0; // type of monster selected
+            this.hide_tiles = false; // hide tiles when countdown is running
 
         },
         
@@ -694,7 +695,9 @@ function (dojo, declare) {
                 break;
             
             case 'tileSelection':
-                if (args.args[this.player_id] == 2) {
+                debug(args)
+                debug(args.args['coutdowntime'])
+                if (args.args['countcards'][this.player_id] == 2) {
                     this.lastTurn = true;
                     this.changePageTitle('lasttile');
                 }
@@ -703,6 +706,30 @@ function (dojo, declare) {
                     // remove explo selection popup (that remains on replay mode)
                     debug('removing explo popup')
                     dojo.destroy('bm_popup')
+                }
+                if (args.args['coutdowntime'] > 0) {
+                    this.coutdowntime = args.args['coutdowntime'];
+                    // set countdown
+                    debug('coutdowntime '+ this.coutdowntime);
+                    // hide the tiles if present
+                    if (dojo.query('.stockitem').length > 0) {
+                        dojo.query('.bm_margin_stock').addClass('bm_stock_invisible')
+                    } else {
+                        this.hide_tiles = true; // in case the tiles are not yet on the board (late notification)
+                    }
+                    dojo.removeClass("bm_countdown", "bm_invisible");
+                    this.countdown = setInterval(() => {
+                        dojo.query("#bm_countdown > i").addClass('bm_countdown_anim')
+                        document.querySelector("#bm_countdown > i").innerText=this.coutdowntime;
+                        this.coutdowntime--;
+                        if (this.coutdowntime == -1) {
+                            clearInterval(this.countdown);
+                            this.countdown = null;
+                            this.hide_tiles = false;
+                            dojo.addClass("bm_countdown", "bm_invisible");
+                            dojo.query('.bm_margin_stock').removeClass('bm_stock_invisible')
+                        }
+                    }, 1000);
                 }
                 dojo.query(".possibleMoveV").forEach(function(node, index, nodelist){
                     dojo.destroy(node);
@@ -2251,6 +2278,7 @@ function (dojo, declare) {
             } else {
                 this.lastTurn = false;
             }
+            if (this.hide_tiles) dojo.query('.stockitem').addClass('bm_stock_invisible'); // hide tile if countdown is running
         },
 
         notif_updateTileAvail : function (notif) {

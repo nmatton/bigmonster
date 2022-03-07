@@ -38,6 +38,7 @@ class BigMonster extends Table
                          "first_player" => 14,
                          "teamdefined" => 15,
                          "explotileplacement" => 16,
+                         "endcountdowntimestamp" => 17,
                          "playmode" => 101,
                          "hidescore" => 102,
                          '3pdraft' => 103) );
@@ -89,6 +90,7 @@ class BigMonster extends Table
         self::setGameStateInitialValue( 'teamdefined', 0 ); // 0 = team not defined, 1 = team defined
         self::setGameStateInitialValue( 'active_row', 0 ); // usefull for 2 and 3 players mode - active row of tile (where user can pick a card). 1 = top row; 2 = bottom row
         self::setGameStateInitialValue( 'explotileplacement', 0 ); // set to 1 when 19th tile is being placed
+        self::setGameStateInitialValue( 'endcountdowntimestamp', -1 ); // value between 0 and 1000, define the end time of the countdown
         
         // Create cards
         $cards = array ();
@@ -2439,7 +2441,23 @@ class BigMonster extends Table
         foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
             $countcards[$player_id] = $this->custcountCardInLocation( 'hand', $player_id );
         }
-        return $countcards;
+        if (intval(self::getGameStateValue( 'endcountdowntimestamp' )) > -1) {
+            $endcoutdowntime = intval(self::getGameStateValue( 'endcountdowntimestamp' ));
+            $ctime = time();
+            $basetime = floor(time()/1000);
+            $shorttime = $ctime - $basetime * 1000;
+            $coutdowntime = $endcoutdowntime - $shorttime;
+        } else if (self::getGameStateValue( 'currentRound' ) == 1 and self::getGameStateValue( 'currentTurn' ) == 0) {
+            $ctime = time();
+            $basetime = floor(time()/1000);
+            $shorttime = $ctime - $basetime * 1000;
+            $endcoutdowntime = $shorttime + 10;
+            self::setGameStateValue( 'endcountdowntimestamp', intval($endcoutdowntime) );
+            $coutdowntime = 10;
+        } else {
+            $coutdowntime = 0;
+        }
+        return array('countcards' => $countcards, 'coutdowntime' => $coutdowntime);
     }
 
     function argvar_tileSelection()

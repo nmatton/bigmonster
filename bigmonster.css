@@ -209,6 +209,52 @@ padding-left: 4px;
     text-align: center;
 }
 
+/** countdown **/
+
+#bm_countdown{
+    height: 62px;
+    position: fixed;
+    width: 30vw;
+    left: 35%;
+    top: 15%;
+    z-index: 50;
+    background: radial-gradient(#3654a2, #303b62);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    color: yellow;
+    flex-direction: column;
+}
+
+.bm_countdown_anim {
+    animation: bm_cd 1s infinite;
+}
+
+@keyframes bm_cd {
+    0% {
+      opacity: 0;
+      filter: blur(20px);
+      transform: scale(12);
+    }
+    25% {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1.5);
+    }
+    75% {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1.5);
+    }
+    100% {
+      opacity: 0;
+      filter: blur(20px);
+      transform: scale(0);
+    }
+  }
+  
+
 /** ships **/
 .ship_wrapper{
     transition: all 1s;
@@ -357,6 +403,7 @@ padding-left: 4px;
 
 .bm_margin_stock {
     margin: 10px !important;
+    transition: opacity 1s;
 }
 
 
@@ -854,6 +901,14 @@ justify-content: space-between; */
     box-shadow: inset 0 0 0 1000px rgb(255 255 255 / 48%);
     cursor: default;
     pointer-events: none;
+}
+
+.bm_stock_invisible {
+    opacity: 0 !important;
+}
+
+.bm_invisible {
+    display: none !important;
 }
 
 .bm_accept {

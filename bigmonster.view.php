@@ -63,6 +63,7 @@
         $this->tpl['TITLE_BOARD'] = self::_("Board");
         $this->tpl['MEDALS'] = self::_("Medals");
         $this->tpl['TITLE_SHIPS'] = self::_("Ships");
+        $this->tpl['START_MSG'] = self::_("Game start in ...");
 
         /*
         
