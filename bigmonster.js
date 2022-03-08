@@ -544,7 +544,8 @@ function (dojo, declare) {
                 if (gamedatas.gamestate.name == "tileSelection") {
                     this.busyShips.push(toint(pid));
                 }
-                dojo.place( "<div id='tileOnShip_"+ pid +"_"+turn_n+"' class='bm_tileClass backtile'></div>", "ship_" + pid, "last" );
+                let color = this.gamedatas.players[gamedatas.cardsonshiporigin[pid]]['color']
+                dojo.place( "<div id='tileOnShip_"+ pid +"_"+turn_n+"' class='bm_tileClass backtile' style='outline: solid #" + color + " 2px'></div>", "ship_" + pid, "last" );
             }
 
 
@@ -1426,7 +1427,11 @@ function (dojo, declare) {
 
         // replace the "stock" cards to an static html element
         cardOnShipAnimEnded : function(player_ship_id, turn_n) {
-            dojo.place( "<div id='tileOnShip_"+ player_ship_id +"_"+turn_n+"' class='bm_tileClass backtile'></div>", "ship_" + player_ship_id, "last" );
+            debug('in first card')
+            const color = this.gamedatas.players[this.currentPlayer]['color']
+            let inDiv = "<div id='tileOnShip_"+ player_ship_id +"_"+turn_n+"' class='bm_tileClass backtile' style='outline: solid #"+color+" 2px'></div>"
+            debug(inDiv)
+            dojo.place( inDiv, "ship_" + player_ship_id, "last" );
         },
 
         activateShips : function() {
@@ -2330,14 +2335,13 @@ function (dojo, declare) {
                     if (Object.hasOwnProperty.call(unsel_cards_list, key)) {
                         const element = unsel_cards_list[key];
                         //flip card
-                        dojo.style("myhand_item_" + element['id'], "transform-style", "preserve-3d")
-                        dojo.style("myhand_item_" + element['id'], "transition", "transform 0.8s ease")
                         dojo.addClass("myhand_item_" + element['id'], "bm_tileClass")
-                        dojo.addClass("myhand_item_" + element['id'], "backtile")
+                        dojo.addClass("myhand_item_" + element['id'], "bm_backtilestock")
                         if (!this.lastTurn) {
                             // move card to ship
                             var anim = this.slideToObject( "myhand_item_" + element['id'], "ship_" + s.player_ship_id);
                             if (first_card) {
+                                debug('first card')
                                 dojo.connect(anim, 'onEnd', dojo.hitch(this, 'cardOnShipAnimEnded', s.player_ship_id, s.turn));
                                 first_card = false;
                             }
@@ -2356,7 +2360,8 @@ function (dojo, declare) {
                 // update the cards on hand
             } else if(toint(s.player_ship_id) > 0) {
                 // make a move animation of cards from player panel to ship
-                dojo.place( "<div id='tileOnShip_"+s.player_ship_id+"_"+s.turn+"' class='bm_tileClass backtile' style='position: absolute;'></div>", "overall_player_board_"+s.player_id, "first" );
+                const color = this.gamedatas.players[s.player_id]['color']
+                dojo.place( "<div id='tileOnShip_"+s.player_ship_id+"_"+s.turn+"' class='bm_tileClass backtile' style='position: absolute; outline: solid #"+color+" 2px'></div>", "overall_player_board_"+s.player_id, "first" );
                 this.slideToObjectRelative( "tileOnShip_"+s.player_ship_id+"_"+s.turn, "ship_"+s.player_ship_id, 1000, 1000, 'last' );
                 //this.slideToObject( "tileOnShip_"+s.player_ship_id, "ship_"+s.player_ship_id ).play();
                 // remove the callable mouse pointer of the ship where tile was moved to + add the ship to the list of busyships

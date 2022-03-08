@@ -383,6 +383,7 @@ class BigMonster extends Table
         $result['isTeamPlay'] = $this->isTeamPlay();
         $result['hidescore'] = $this->hideScore();
         $result['is3pdraft'] = $this->is3pdraft();
+        $result['cardsonshiporigin'] = $this->getCardsOnShipOrigin();
         return $result;
     }
 
@@ -847,6 +848,16 @@ class BigMonster extends Table
                 'location_arg' => $this->dbcard[$id[0]]['card_location_arg']);
         }
     }
+
+
+    public function getCardsOnShipOrigin()
+    {
+        // return array with player_id as key and id of player that sent card to that player as value or 0 if the player has no card on his ship
+        // example : Array ([2356487] => 2356482 [2356488] => 2356487 [2356486] => 0 [2356482] => 0 )
+        $sql = 'SELECT player_id, cardsonshiporigin FROM player';
+        return self::getCollectionFromDb($sql, true);
+    }
+
 
     function get_teams($updatedb=false)
     {
@@ -2229,18 +2240,14 @@ class BigMonster extends Table
         self::NotifyPlayer( $player_id, "ReplayTileSelected", '', array(
                 "card_id" => $sel_card));
         if ($ship_player_id == 0) {
+            // last tile of current round -> remaining card to discard
             $this->moveCardsFromTo($rem_cards,'hand', 'discard', $player_id, $player_id);
-            /* self::NotifyAllPlayers("cardsOnShip", clienttranslate('${player_name} put the last card to discard'),array(
-                "player_name" => self::getPlayerNameById($player_id),
-                "player_id" => $player_id,
-                "player_ship_id" => $ship_player_id,
-                "turn" => $current_turn)
-            ); */
             self::NotifyPlayer( $player_id, "cardsOnShip", '', array(
                 "player_id" => $player_id,
                 "player_ship_id" => $ship_player_id,
                 "turn" => $current_turn));
         } else {
+            // standard draft
             $this->moveCardsFromTo($rem_cards,'hand', 'onShip', $player_id, $ship_player_id);
             self::NotifyAllPlayers("cardsOnShip", clienttranslate('${player_name} put the rest of his cards to ${player_ship_name} ship'),array(
                 "player_name" => self::getPlayerNameById($player_id),
@@ -2249,6 +2256,7 @@ class BigMonster extends Table
                 "player_ship_id" => $ship_player_id,
                 "turn" => $current_turn)
             );
+            self::DbQuery("UPDATE player SET cardsonshiporigin = $player_id WHERE player_id = $ship_player_id");
         }
         $current_state = $this->getStateName();
         if ($current_state == 'bmExploTileSelection') {
@@ -2444,14 +2452,10 @@ class BigMonster extends Table
         if (intval(self::getGameStateValue( 'endcountdowntimestamp' )) > -1) {
             $endcoutdowntime = intval(self::getGameStateValue( 'endcountdowntimestamp' ));
             $ctime = time();
-            $basetime = floor(time()/1000);
-            $shorttime = $ctime - $basetime * 1000;
-            $coutdowntime = $endcoutdowntime - $shorttime;
+            $coutdowntime = $endcoutdowntime - $ctime;
         } else if (self::getGameStateValue( 'currentRound' ) == 1 and self::getGameStateValue( 'currentTurn' ) == 0) {
             $ctime = time();
-            $basetime = floor(time()/1000);
-            $shorttime = $ctime - $basetime * 1000;
-            $endcoutdowntime = $shorttime + 10;
+            $endcoutdowntime = $ctime + 10;
             self::setGameStateValue( 'endcountdowntimestamp', intval($endcoutdowntime) );
             $coutdowntime = 10;
         } else {
@@ -3355,20 +3359,10 @@ class BigMonster extends Table
 
     }
     
-///////////////////////////////////////////////////////////////////////////////////:
-////////// DB upgrade
-//////////
 
-    /*
-        upgradeTableDb:
-        
-        You don't have to care about this until your game has been published on BGA.
-        Once your game is on BGA, this method is called everytime the system detects a game running with your old
-        Database scheme.
-        In this case, if you change your Database scheme, you just have to apply the needed changes in order to
-        update the game database and allow the game to continue to run with your new version.
-    
-    */
+//** DB upgrade
+
+
     
     function upgradeTableDb( $from_version )
     {
@@ -3377,23 +3371,13 @@ class BigMonster extends Table
         // $from_version is equal to 1404301345
         
         // Example:
-//        if( $from_version <= 1404301345 )
-//        {
-//            // ! important ! Use DBPREFIX_<table_name> for all tables
-//
-//            $sql = "ALTER TABLE DBPREFIX_xxxxxxx ....";
-//            self::applyDbUpgradeToAllDB( $sql );
-//        }
-//        if( $from_version <= 1405061421 )
-//        {
-//            // ! important ! Use DBPREFIX_<table_name> for all tables
-//
-//            $sql = "CREATE TABLE DBPREFIX_xxxxxxx ....";
-//            self::applyDbUpgradeToAllDB( $sql );
-//        }
-//        // Please add your future database scheme changes here
-//
-//
+        //        if( $from_version <= 1405061421 )
+        //        {
+        //        ! important ! Use DBPREFIX_<table_name> for all tables
+        //
+        //            $sql = "CREATE TABLE DBPREFIX_xxxxxxx ....";
+        //            self::applyDbUpgradeToAllDB( $sql );
+        //        }
 
 
     }    

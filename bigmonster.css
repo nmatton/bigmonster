@@ -825,6 +825,11 @@ padding-left: 4px;
     left: 0%;
   }
 
+.bm_backtilestock {
+    background-position: 0 -800% !important;
+    background-image: url(img/monster_tiles_1-4_v2.jpg) !important;
+}
+
 /** team info **/
 
 .team_banner {
