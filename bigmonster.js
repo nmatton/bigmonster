@@ -717,6 +717,7 @@ function (dojo, declare) {
                     // hide the tiles if present
                     if (dojo.query('.stockitem').length > 0) {
                         dojo.query('.bm_margin_stock').addClass('bm_stock_invisible')
+                        dojo.query('.bm_margin_stock').addClass('bm_stock_hide')
                     } else {
                         this.hide_tiles = true; // in case the tiles are not yet on the board (late notification)
                     }
@@ -730,7 +731,9 @@ function (dojo, declare) {
                             this.countdown = null;
                             this.hide_tiles = false;
                             dojo.addClass("bm_countdown", "bm_invisible");
-                            dojo.query('.bm_margin_stock').removeClass('bm_stock_invisible')
+                            dojo.query('.bm_margin_stock').removeClass('bm_stock_hide');
+                            document.body.offsetHeight;
+                            dojo.query('.bm_margin_stock').removeClass('bm_stock_invisible');
                         }
                     }, 1000);
                 }
@@ -2339,24 +2342,43 @@ function (dojo, declare) {
                     if (Object.hasOwnProperty.call(unsel_cards_list, key)) {
                         const element = unsel_cards_list[key];
                         //flip card
+                        let tile_id = element['id'];
+                        // put the tile on a wrapper with back tile side to it
+                        //dojo.place('<div id="stockitem_wrap_'+tile_id+'" class="stockwrapper">'+$('myhand_item_'+tile_id).outerHTML+'<div id="back_'+tile_id+'" class="bm_tileClass bm_backtilestock bm_backtilestockanim"></div></div>', 'myhand_item_'+tile_id, 'replace' )
+                        
                         dojo.addClass("myhand_item_" + element['id'], "bm_tileClass")
                         dojo.addClass("myhand_item_" + element['id'], "bm_backtilestock")
-                        if (!this.lastTurn) {
-                            // move card to ship
-                            var anim = this.slideToObject( "myhand_item_" + element['id'], "ship_" + s.player_ship_id);
-                            if (first_card) {
-                                debug('first card')
-                                dojo.connect(anim, 'onEnd', dojo.hitch(this, 'cardOnShipAnimEnded', s.player_ship_id, s.turn));
-                                first_card = false;
+                        
+                       // add style component to prepare for flip animation
+                      /*  dojo.style('myhand_item_'+tile_id, 'margin', '0px');
+                       dojo.style('myhand_item_'+tile_id, 'backface-visibility', 'hidden');
+                       // add the top/left position to back tile according to the original tile
+                       (dojo.style('myhand_item_'+tile_id, 'top') == 0) ? dojo.style('stockitem_wrap_'+tile_id, 'top', '0px') : dojo.style('stockitem_wrap_'+tile_id, 'top', '110px');
+                       dojo.style('stockitem_wrap_'+tile_id, 'left', dojo.style('myhand_item_'+tile_id, 'left')+'px');
+                       dojo.style('myhand_item_'+tile_id, 'top', '0px');
+                       dojo.style('myhand_item_'+tile_id, 'left', '0px');
+                       dojo.addClass('stockitem_wrap_'+tile_id, "flipped"); */
+                       //await sleep(10000);
+                       //setTimeout(() => {
+                            if (!this.lastTurn) {
+                                // move card to ship
+                                var anim = this.slideToObject( "myhand_item_" + tile_id, "ship_" + s.player_ship_id);
+                                if (first_card) {
+                                    debug('first card')
+                                    dojo.connect(anim, 'onEnd', dojo.hitch(this, 'cardOnShipAnimEnded', s.player_ship_id, s.turn));
+                                    first_card = false;
+                                }
+                                anim.play();
+                                //this.playerHand.removeFromStockById( tile_id );
+                            } else {
+                                // don't move the card (will be destroyed when removed from stock)
                             }
-                            anim.play();
-                        } else {
-                            // don't move the card (will be destroyed when removed from stock)
-                        }
-                        // remove moved cards from player's hand
-                        this.playerHand.removeFromStockById( element['id'] );
-                        // unselect remaining cards on hand
-                        this.playerHand.unselectAll();
+                            // remove moved cards from player's hand
+                            this.playerHand.removeFromStockById( tile_id );
+                            //dojo.destroy('stockitem_wrap_'+tile_id);
+                            // unselect remaining cards on hand
+                            this.playerHand.unselectAll();
+                        //}, 1000);
                         // change the clickable mouse aspect on ship tiles
                         this.desactivateShips();
                     }

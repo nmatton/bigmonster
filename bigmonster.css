@@ -414,8 +414,9 @@ padding-left: 4px;
 }
 
 .bm_margin_stock {
-    margin: 10px !important;
+    margin: 10px;
     transition: opacity 1s;
+    box-shadow: 3px 5px 5px 0px #00000057;
 }
 
 
@@ -581,6 +582,12 @@ padding-left: 4px;
 }
 
 .medal_area_inner:hover {
+    -webkit-transform: rotateY(180deg);
+    -moz-transform: rotateY(180deg);
+    transform: rotateY(180deg);
+}
+
+.flipped {
     -webkit-transform: rotateY(180deg);
     -moz-transform: rotateY(180deg);
     transform: rotateY(180deg);
@@ -835,11 +842,21 @@ padding-left: 4px;
     position: relative;
     top: 10%;
     left: 0%;
+    box-shadow: 3px 5px 5px 0px #00000057;
   }
 
 .bm_backtilestock {
     background-position: 0 -800% !important;
     background-image: url(img/monster_tiles_1-4_v2.jpg) !important;
+    box-shadow: 3px 5px 5px 0px #00000057;
+}
+
+.bm_backtilestockanim {
+    width: 50px;
+    height: 100px;
+    position: relative;
+    backface-visibility: hidden;
+    transform: rotateY( 180deg );
 }
 
 /** team info **/
@@ -909,6 +926,14 @@ justify-content: space-between; */
     outline: 6px solid red;
 }
 
+.stockwrapper {
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+    text-align: center;
+    width: 50px;
+    position: relative;
+}
+
 .stockitem.selected{
     outline: 3px dashed green;
     margin-left: 1px;
@@ -922,6 +947,10 @@ justify-content: space-between; */
 
 .bm_stock_invisible {
     opacity: 0 !important;
+}
+
+.bm_stock_hide {
+    display: none !important;
 }
 
 .bm_invisible {
