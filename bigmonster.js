@@ -221,6 +221,8 @@ function (dojo, declare) {
                 let explo_info = gamedatas.help_explorers[explorer_id]['descr'];
                 if (this.nums_of_players >= 4 || this.is3pdraft) {
                     this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) , _('draft cards to this player'), 10 )
+                } else {
+                    this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) ,'', 10 )
                 }
             }
             if (this.nums_of_players >= 4 || this.is3pdraft) {
@@ -323,7 +325,7 @@ function (dojo, declare) {
                     dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
                 } else {
                     // remove the ship area
-                    dojo.destroy('ships');
+                    dojo.destroy('shipwrap');
                     // remove my hand title
                     dojo.destroy('bm_title_myhand');
                     // update the number in card remaining count
@@ -784,7 +786,6 @@ function (dojo, declare) {
                     var kind_monter = Math.floor(this.playerHand.items[0].type / 10);
                     this.lastPossibleMoveIdx = [0,0]; // initiate recorded move position
                     this.dbMovepos = [0,0]; // selected pos to send to DB
-    
                     // show the available places to put tiles
                     for (var idx in pos) {
                         if (kind_monter == 1) {
@@ -800,7 +801,6 @@ function (dojo, declare) {
                         }
                         this.addPossiblePlacement(pos[idx][0],pos[idx][1], dir);
                     }
-    
                     // connect click event
                     dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
                     dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
@@ -815,9 +815,7 @@ function (dojo, declare) {
                         const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);
                         this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
                     }
-
                 }
-                
                 break;
             case 'var_placeTile':
                 dojo.query('.selected').removeClass('disabled');
@@ -845,13 +843,11 @@ function (dojo, declare) {
                         }
                         this.addPossiblePlacement(pos[idx][0],pos[idx][1], dir);
                     }
-    
                     // connect click event
                     dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
                     dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
                 }
                 break;
-
             case 'var_endTurn':
                 this.selected_tile_id = 0;
                 this.selected_row = 0;
@@ -867,10 +863,8 @@ function (dojo, declare) {
                         this.playerHand.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
                         this.lastTurn = true;
                     }
-
                 }
                 break;
-
             case 'bmExploTilePlacement':
                 if (this.isCurrentPlayerActive()) {
                     // update hand with discard tiles
@@ -1859,10 +1853,14 @@ function (dojo, declare) {
             dojo.stopEvent(s);
             if (this.checkAction('selectShip', true) && this.tile_selected && this.lastTurn) {
                 var sel_cards_list = this.playerHand.getSelectedItems();
-                var unsel_card = this.playerHand.getUnselectedItems();
+                var unsel_cards_list = this.playerHand.getUnselectedItems();
+                var unsel_cards = [];
+                for (var i in unsel_cards_list) {
+                    unsel_cards.push(unsel_cards_list[i]['id'])
+                }
                 this.ajaxcall( '/bigmonster/bigmonster/selectShip.html', { lock: true, 
                     ship_player_id : 0, // because we used a button -> not related to another player
-                    rem_cards : unsel_card[0]['id'],
+                    rem_cards : unsel_cards.toString(),
                     sel_card : sel_cards_list[0]['id']
                  }, this, function( result ) {
                     dojo.empty('customActions');
@@ -2257,6 +2255,12 @@ function (dojo, declare) {
             }
             this.placeTile(s.player_id, s.explorer_id,s.explorer_id, 0,0,0, 1,0);
             dojo.query('#tile_e_' + s.explorer_id).connect('onclick', this, 'onClickExplo');
+            let explo_info = this.gamedatas.help_explorers[s.explorer_id]['descr'];
+            if (this.nums_of_players >= 4 || this.is3pdraft) {
+                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) , _('draft cards to this player'), 10 )
+            } else {
+                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) ,'', 10 )
+            }
 
         },
 
@@ -2548,13 +2552,8 @@ function (dojo, declare) {
                 player_id : s.player_id,
                 medal_id : s.medal_id
             });
-            if (this.player_id == s.player_id) {
-                var target = $('help-icon')
-                var position = 'before'
-            } else {
-                var target = $('ma_'+s.player_id)
-                var position = 'last'
-            }
+            var target = $('ma_'+s.player_id)
+            var position = 'last'
             dojo.place( miaDiv, target, position );
             medal_team_id = (s.medal_id > 10) ? 2 : 1;
             if (!this.medals_status[s.medal_id]) {

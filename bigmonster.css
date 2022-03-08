@@ -32,6 +32,18 @@ html {
 
 
 /** Scrollable area **/
+#map_container {
+    touch-action: none;
+}
+
+#map_scrollable_oversurface {
+	pointer-events: none;
+}
+#map_scrollable_oversurface > *{
+	pointer-events: initial;
+}
+
+
 .scrollBoards {
     display: flex;
     flex-wrap: wrap;

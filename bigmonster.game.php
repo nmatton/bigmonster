@@ -2216,6 +2216,9 @@ class BigMonster extends Table
     function selectShip($ship_player_id, $rem_cards_str, $sel_card)
     {
         self::checkAction( 'selectShip' );
+        self::dump('ship_player_id', $ship_player_id);
+        self::dump('rem_cards_str', $rem_cards_str);
+        self::dump('sel_card', $sel_card);
         $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
         $rem_cards = explode(',', $rem_cards_str);
         // check provided cards are correctly in hand
@@ -2555,7 +2558,7 @@ class BigMonster extends Table
     function argbmExploTileSelection()
     {
         # Send info of tile on the discard pile
-        $cards = $this->custgetCardsInLocation( 'discard');
+        $cards = $this->custgetCardsInLocation( 'hand',  self::getActivePlayerId() );
         return $cards;
     }
 
@@ -2616,7 +2619,7 @@ class BigMonster extends Table
             // notify players of selected explorers
             $sql = "SELECT player_id, explorer_id FROM explorers WHERE selected = 1";
             $explorers = self::getCollectionFromDB( $sql );
-            self::dump( 'explorer_infos', $this->explorer_infos );
+            //self::dump( 'explorer_infos', $this->explorer_infos );
             foreach ($explorers as $player_id => $explorer_id) {
                 self::NotifyAllPlayers("selectedExplorers",clienttranslate('${player_name} selected ${explorer_name}'), array(
                     "player_name" => self::getPlayerNameById($player_id),
@@ -2920,6 +2923,7 @@ class BigMonster extends Table
                     self::giveExtraTime($player_id);
                     // move all tiles from discard to the hand of the player
                     $this->cards->moveAllCardsInLocation('discard', 'hand', null, $player_id);
+                    $this->updateLocalDB('card');
                     // update global var that logged that the 19th tile placement has been done
                     self::setGameStateValue( 'explotileplacement', 1 );
                     // move to specific state
@@ -3086,7 +3090,7 @@ class BigMonster extends Table
                 $tie_scores[$tied_team] = $tie_scores_tmp[$tied_team];
             }
             $winning_team = array_keys($tie_scores,max($tie_scores));
-            if (count($winning_team) > 1) {
+            if (count($winning_team) > 1 and $this->isTeamPlay()) {
                 // tie again -> check 2nd tie-breaker : the most bigmonster point for teams
                 $tie_scores = array();
                 foreach ($winning_team as $tied_team) {
@@ -3157,7 +3161,7 @@ class BigMonster extends Table
                     self::DbQuery( "UPDATE player SET player_score_aux = 0 WHERE player_id='".$team_player_ids[1]."'" );
                 }
             }
-        } else {
+        } else if (count($winning_team) == 1 and $this->isTeamPlay()) {
             // one team won, no tie-breaker : record to DB
             $team_player_ids = $this->getTeamPlayers($winning_team);
             self::DbQuery( "UPDATE player SET player_score_aux = 1 WHERE player_id='".$team_player_ids[0]."'" );
@@ -3280,6 +3284,7 @@ class BigMonster extends Table
                 // move card on hand to discard
                 $sel_card = array_keys($this->custgetCardsInLocation('zombieHand'));
                 $this->cards->moveAllCardsInLocation('zombieHand', 'discard' );
+                $this->updateLocalDB('card');
                 self::NotifyAllPlayers("ZombiePlayedTile", '', ["sel_card" => $sel_card[0]]);
                 $this->gamestate->nextState( 'var_endTurn' );
             } else {
@@ -3306,22 +3311,34 @@ class BigMonster extends Table
                     }
                     break;
                 case 'tileSelection':
+                    $this->updateLocalDB('card');
                     // get card on hand of player
                     $cards = array_keys($this->custgetCardsInLocation('hand', $active_player));
+                    //assert(count($cards) > 0);
+                    /* if (count($cards) == 0) {
+                        sleep(2);
+                        $cards = array_keys($this->custgetCardsInLocation('hand', $active_player));
+                    } */
+                    self::dump('Zombiecards', $cards);
                     $sel_card_idx = bga_rand( 0, count($cards) - 1 );
                     $sel_card = $cards[$sel_card_idx];
                     unset($cards[$sel_card_idx]); // cards_ids contains now the remaining cards list
                     // select randomly another player without cards on ship
                     $player_list = array_keys($this->loadPlayersBasicInfos());
-                    unset($player_list[intval($active_player)]);
+                    self::dump('PlayerList_initial', $player_list);
+                    unset($player_list[array_search (intval($active_player), $player_list)]);
+                    self::dump('PlayerList_AfterRemovingZombie', $player_list);
                     $cards_on_ship = 1;
                     while ($cards_on_ship > 0) {
-                        $target_player = $player_list[bga_rand(0 , count($player_list) - 1)];
+                        $target_player_idx = bga_rand(0 , count($player_list) - 1);
+                        $target_player = $player_list[$target_player_idx];
                         //check that this player does not have cards on his ship
                         $sql = "SELECT count(card_id) as count FROM card WHERE card_location_arg = $target_player AND card_location = 'onShip'";
                         $cards_on_ship = self::getUniqueValueFromDB($sql);
-                        unset($player_list[intval($active_player)]);
+                        unset($player_list[intval($target_player_idx)]);
                     }
+                    self::dump('PlayerList_final', $player_list);
+                    self::dump('target_player', $target_player);
                     $current_turn = self::getGameStateValue( 'currentTurn' );
                     if (count($cards) > 1) {
                         // move cards to someone's ship
