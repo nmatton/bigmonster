@@ -203,7 +203,13 @@ class Scroller
       center_y -= 32
       debug('correct center_y to '+center_y);
     }
-    this.scrollTo(-center_x, -center_y);
+    if (isNaN(center_x) || isNaN(center_x)) {
+      debug('center_x or center_y is NaN');
+      this.scrollTo(-50, -50);
+      return;
+    } else {
+      this.scrollTo(-center_x, -center_y);
+    }
     // UPDATE ZOOM
     // zoom 1 : contains 4 on Y  and 11 on X
     // zoom 0.9 : contains 4 on Y and 12 on X
