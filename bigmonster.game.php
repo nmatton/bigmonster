@@ -854,8 +854,12 @@ class BigMonster extends Table
     {
         // return array with player_id as key and id of player that sent card to that player as value or 0 if the player has no card on his ship
         // example : Array ([2356487] => 2356482 [2356488] => 2356487 [2356486] => 0 [2356482] => 0 )
-        $sql = 'SELECT player_id, cardsonshiporigin FROM player';
-        return self::getCollectionFromDb($sql, true);
+        try {
+            $sql = 'SELECT player_id, cardsonshiporigin FROM player';
+            return self::getCollectionFromDb($sql, true);
+        } catch (\Throwable $th) {
+            return array();
+        }
     }
 
 

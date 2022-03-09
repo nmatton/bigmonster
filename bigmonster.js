@@ -546,8 +546,13 @@ function (dojo, declare) {
                 if (gamedatas.gamestate.name == "tileSelection") {
                     this.busyShips.push(toint(pid));
                 }
-                let color = this.gamedatas.players[gamedatas.cardsonshiporigin[pid]]['color']
-                dojo.place( "<div id='tileOnShip_"+ pid +"_"+turn_n+"' class='bm_tileClass backtile' style='outline: solid #" + color + " 2px'></div>", "ship_" + pid, "last" );
+                if (Object.keys(gamedatas.cardsonshiporigin).length > 0) {
+                    // this check is usefull for to avoid breaking ongoing game without all the tables
+                    let color = this.gamedatas.players[gamedatas.cardsonshiporigin[pid]]['color']
+                    dojo.place( "<div id='tileOnShip_"+ pid +"_"+turn_n+"' class='bm_tileClass backtile' style='outline: solid #" + color + " 2px'></div>", "ship_" + pid, "last" );
+                } else {
+                    dojo.place( "<div id='tileOnShip_"+ pid +"_"+turn_n+"' class='bm_tileClass backtile'></div>", "ship_" + pid, "last" );
+                }                    
             }
 
 
@@ -710,7 +715,7 @@ function (dojo, declare) {
                     debug('removing explo popup')
                     dojo.destroy('bm_popup')
                 }
-                if (args.args['coutdowntime'] > 0) {
+                if (args.args['coutdowntime'] > 0 && !this.isReadOnly()) {
                     this.coutdowntime = args.args['coutdowntime'];
                     // set countdown
                     debug('coutdowntime '+ this.coutdowntime);
