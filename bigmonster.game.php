@@ -2263,7 +2263,12 @@ class BigMonster extends Table
                 "player_ship_id" => $ship_player_id,
                 "turn" => $current_turn)
             );
-            self::DbQuery("UPDATE player SET cardsonshiporigin = $player_id WHERE player_id = $ship_player_id");
+            try {
+                self::DbQuery("UPDATE player SET cardsonshiporigin = $player_id WHERE player_id = $ship_player_id");
+            } catch (Exception $e) {
+                // do nothing -> it means the DB is not updated with the cardsonshiporigin field
+            }
+
         }
         $current_state = $this->getStateName();
         if ($current_state == 'bmExploTileSelection') {
@@ -2393,6 +2398,28 @@ class BigMonster extends Table
             $this->gamestate->setPlayerNonMultiactive($player_id, 'endTurn'); // deactivate player; if none left, transition to 'endTurn' state
         }
         
+    }
+
+    function undoPlaceTile()
+    {
+        // revert the effect of the previously placed tile
+        self::checkAction( 'undoPlaceTile' );
+        if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
+            // variant mode
+            // not possible to undo in variant mode
+        } else {
+            $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
+            $this->gamestate->setPlayersMultiactive( $player_id, 'placeTile' );
+        }
+        // the last played tile is identifiable with the last_play = 1 on card table
+        /* TO DO : 
+            - reactivate the player   
+            - move back card to from board to hand
+            - revert mutation = 0 for this tile
+            - get tiles with last_play = 2 => it means the tile has generated a mutation on this tile -> lower value of mutation of 1
+
+        */
+
     }
 
     
