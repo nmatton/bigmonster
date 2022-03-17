@@ -1,4 +1,3 @@
-
 -- ------
 -- BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
 -- BigMonster implementation : © Nicolas Matton (nicolas@locla.be)
