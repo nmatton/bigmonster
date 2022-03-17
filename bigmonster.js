@@ -579,7 +579,7 @@ function (dojo, declare) {
         onEnteringState: function( stateName, args )
         {
             //debug('entering stage' + stateName);
-            
+            dojo.empty('customActions');
             switch( stateName )
             {
             
@@ -742,12 +742,8 @@ function (dojo, declare) {
                         }
                     }, 1000);
                 }
-                dojo.query(".possibleMoveV").forEach(function(node, index, nodelist){
-                    dojo.destroy(node);
-                });
-                dojo.query(".possibleMoveH").forEach(function(node, index, nodelist){
-                    dojo.destroy(node);
-                });
+                dojo.query('.possibleMoveV').forEach(dojo.destroy);
+                dojo.query('.possibleMoveH').forEach(dojo.destroy);
                 break;
             case 'var_tileSelection':
                 this.active_row = args.args[0];
@@ -785,6 +781,7 @@ function (dojo, declare) {
                 });
                 break;
             case 'placeTile':
+                console.log(args)
                 if (this.playerHand.items.length > 0) {
                     // some card on hand to be placed (if length = 0 means that the tile has been placed previously)
                     var pos = args.args['_private']['possibleMoves'];
@@ -823,6 +820,7 @@ function (dojo, declare) {
                         const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);
                         this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
                     }
+                    this.addActionButton( 'button_cancel_placement', _('Cancel placement'), 'onClickCancelTilePlacementButton','customActions', false, 'gray' );
                 }
                 break;
             case 'var_placeTile':
@@ -910,7 +908,7 @@ function (dojo, declare) {
         //
         onLeavingState: function( stateName )
         {
-            
+            dojo.empty('customActions');
             switch( stateName )
             {
             
@@ -1240,7 +1238,7 @@ function (dojo, declare) {
             var n = "";
             var c = '"top:' + t * this.SCALE + "px; left:" + s * this.SCALE + "px; ";
             i && (c = '"position:relative; display:inline-block; margin:10px auto; cursor:pointer; ');
-            return '<div id="tile_' + id + '" class="'+ iclass +'" style=' + (c += "background-position: -" + 100 * r + "% -" + 100 * a + '%"; data-x="'+100*s+'"; data-y="'+100 *t+'"') + ">" + n + "</div>"
+            return '<div id="tile_' + id + '" class="'+ iclass +'" style=' + (c += "background-position: -" + 100 * r + "% -" + 100 * a + '%; transform:rotate(0deg)"; data-x="'+100*s+'"; data-y="'+100 *t+'"') + ">" + n + "</div>"
         },
         placeTile: function(s, t, id,  o, i, l, b=0, m=0) {
             /* 
@@ -2060,15 +2058,18 @@ function (dojo, declare) {
                     dojo.destroy("cancel_placement");
                 }
                 dojo.destroy("button_conf_move");
-                dojo.query('.possibleMoveH').forEach(dojo.destroy);
-                dojo.query('.possibleMoveV').forEach(dojo.destroy);
-
+                // hide possible placement options
+                dojo.query('.possibleMoveH').forEach(function(t) {dojo.style(t,'display','none')});
+                dojo.query('.possibleMoveV').forEach(function(t) {dojo.style(t,'display','none')});
                 // Send placement option
                 this.ajaxcall("/bigmonster/bigmonster/placeTile.html",
                             {   lock: true,
                                 whichMove: this.dbMovepos.toString() },
                             this, function(){
                                 dojo.empty('customActions');
+                                // remove the tile from the hand
+                                this.playerHand.removeAll();
+                                this.addActionButton( 'button_cancel_placement', _('Cancel placement'), 'onClickCancelTilePlacementButton','customActions', false, 'gray' );
                             });
             }
         },
@@ -2078,7 +2079,7 @@ function (dojo, declare) {
             dojo.stopEvent( evt );
             dojo.destroy("button_conf_move");
             dojo.destroy("cancel_placement");
-            // reset opacity to default
+            // reset visibility to default
             dojo.query('.possibleMoveH').forEach(function(t) {dojo.style(t,'display','block')});
             dojo.query('.possibleMoveV').forEach(function(t) {dojo.style(t,'display','block')});
             dojo.query('.possibleMoveV').removeClass('hidden_pos');
@@ -2097,6 +2098,20 @@ function (dojo, declare) {
                 var tileId = result[0].id;
             }
             dojo.destroy("tile_" + tileId);
+        },
+
+        onClickCancelTilePlacementButton: function( evt )
+        {
+            dojo.stopEvent( evt );
+            dojo.destroy("button_cancel_placement");
+            (dojo.query('.possibleMoveV').length == 0 && dojo.query('.possibleMoveH').length == 0) ? noplacement = 1 : noplacement = 0;
+            this.ajaxcall("/bigmonster/bigmonster/undoPlaceTile.html",
+                            {   lock: true,
+                                noplacement: noplacement },
+                            this, function(){
+                                dojo.empty('customActions');
+                            });
+
         },
         
         ///////////////////////////////////////////////////
@@ -2130,6 +2145,7 @@ function (dojo, declare) {
             dojo.subscribe( 'endGame_scoring', this, "notif_endGame_scoring" );
             let num_players = Object.keys(gameui.gamedatas.players).length;
             this.notifqueue.setSynchronous( 'endGame_scoring', 5000 * num_players + 3000 );
+            dojo.subscribe( 'undo_place', this, "notif_undo_place" );
         },  
 
         notif_AskTeamSelection : function (notif) {
@@ -2616,7 +2632,77 @@ function (dojo, declare) {
             }
         },
 
+        notif_undo_place : function (notif) {
+            debug(notif)
+            var s = notif.args;
+            debug(s)
+            var tileId = toint(s.card_id);
+            let kind_monster = -toint($('tile_'+tileId).style['background-position-x'])/100 +1;
+            let type = -toint($('tile_'+tileId).style['background-position-y'])/100+1;
+            debug(kind_monster)
+            debug(type)
+            dojo.style('tile_'+tileId,'z-index',5)
+            this.playerHand.addToStockWithId(this.getCardUniqueId(type, kind_monster), tileId);
+            dojo.query('#myhand_item_'+tileId).style('display','none')
+            this.slideToObjectRelative( "tile_"+tileId, "myhand", 1000, 0, 'last', () => {
+                $('tile_'+tileId).setAttribute("id", "handtile_"+tileId);
+                if (kind_monster ==1) {
+                    dojo.query('#handtile_'+tileId).style('transition','transform 0.8s')
+                    dojo.query('#handtile_'+tileId).style('transform','rotate(0deg)')
+                    setTimeout(() => {
+                        dojo.query('#myhand_item_'+tileId).style('display','block')
+                        dojo.destroy('handtile_'+tileId)
+                        disp_moves()
+                    },800)
+                } else {
+                    dojo.query('#myhand_item_'+tileId).style('display','block')
+                    dojo.destroy('handtile_'+tileId)
+                    disp_moves()
+                }
+            } );
+            function disp_moves() {
+                debug('show moves')
+                if (s.placement.length > 0 || Object.keys(s.placement).length > 0) {
+                    debug('adding placements')
+                    // add again the possible moves
+                    var pos = s.placement['possibleMoves'];
+                    var hdir = s.placement['placement_dirH'];
+                    var vdir = s.placement['placement_dirV'];
+                    var dir;
+                    this.lastPossibleMoveIdx = [0,0]; // initiate recorded move position
+                    this.dbMovepos = [0,0]; // selected pos to send to DB
+                    // show the available places to put tiles
+                    for (var idx in pos) {
+                        if (kind_monster == 1) {
+                            if (hdir[idx] == "X") {
+                                continue;
+                            }
+                            dir = hdir[idx]
+                        } else {
+                            if (vdir[idx] == "X") {
+                                continue;
+                            }
+                            dir = vdir[idx]
+                        }
+                        this.addPossiblePlacement(pos[idx][0],pos[idx][1], dir);
+                    }
+                    // connect click event
+                    dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
+                    dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
+                } else {
+                    dojo.query('.possibleMoveH').forEach(function(t) {dojo.style(t,'display','block')});
+                    dojo.query('.possibleMoveV').forEach(function(t) {dojo.style(t,'display','block')});
+                    dojo.query('.possibleMoveV').removeClass('hidden_pos');
+                    dojo.query('.possibleMoveH').removeClass('hidden_pos');
+                    dojo.query('.possibleMoveV').removeClass('selected_pos');
+                    dojo.query('.possibleMoveH').removeClass('selected_pos');
+                }
+            }
+            this.addActionButton( 'button_conf_move', _('Place Tile'), 'onClickConfirmTilePositionButton', 'customActions' );
+        } 
+        
 
 
-   });             
+
+   });
 });

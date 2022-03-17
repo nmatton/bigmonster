@@ -85,6 +85,14 @@
         self::ajaxResponse( );
     }
 
+    public function undoPlaceTile()
+    {
+        self::setAjaxMode();
+        $noplacement = self::getArg( "noplacement", AT_bool, true );
+        $result = $this->game->undoPlaceTile( $noplacement);
+        self::ajaxResponse( );
+    }
+
       /*
    * loadBug: in studio, type loadBug(20762) into the table chat to load a bug report from production
    * client side JavaScript will fetch each URL below in sequence, then refresh the page

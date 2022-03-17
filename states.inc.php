@@ -77,7 +77,7 @@ $machinestates = array(
         "description" => clienttranslate('Other players must place the selected tile'),
         "descriptionmyturn" => clienttranslate('${you} must place the tile on your board'),
         "type" => "multipleactiveplayer",
-        "possibleactions" => array( "placeTile" ),
+        "possibleactions" => array( "placeTile", 'undoPlaceTile' ),
         "action" => "st_MultiPlayerInit",
         "args" => "argplaceTile",
         "transitions" => array( "endTurn" => 7 )

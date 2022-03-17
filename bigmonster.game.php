@@ -2400,26 +2400,118 @@ class BigMonster extends Table
         
     }
 
-    function undoPlaceTile()
+    function undoPlaceTile($noplacement)
     {
         // revert the effect of the previously placed tile
-        self::checkAction( 'undoPlaceTile' );
+        //self::checkAction( 'undoPlaceTile' );
         if (self::getPlayersNumber() == 2 or (self::getPlayersNumber() == 3 and !$this->is3pdraft())) {
             // variant mode
             // not possible to undo in variant mode
+            throw new BgaVisibleSystemException ('Undo not possible in variant mode');
         } else {
             $player_id = $this->getCurrentPlayerId(); // CURRENT ! as multiplayerstate
-            $this->gamestate->setPlayersMultiactive( $player_id, 'placeTile' );
+            $this->gamestate->setPlayersMultiactive( array($player_id), 'placeTile', false );
         }
-        // the last played tile is identifiable with the last_play = 1 on card table
-        /* TO DO : 
-            - reactivate the player   
-            - move back card to from board to hand
-            - revert mutation = 0 for this tile
-            - get tiles with last_play = 2 => it means the tile has generated a mutation on this tile -> lower value of mutation of 1
-
-        */
-
+        self::dump('noplacement :', $noplacement);
+        // get the last played tile ID
+        $sql = 'SELECT card_id FROM card WHERE last_play = 1 AND card_location_arg = '.$player_id;
+        $last_played_card = self::getUniqueValueFromDB( $sql );
+        self::dump('last played card : ', $last_played_card);
+        // notify the player to move back tile to hand
+        // move the card back to hand
+        $sql = 'UPDATE card SET last_play = 0, mutation = 0, board_x = null, board_y=null, card_location="hand" WHERE card_id = '.$last_played_card;
+        self::DbQuery( $sql );
+        // select the mutation level and revert mutation effect of the tile on other tiles
+        $sql = "SELECT card_id, card_type_arg, mutation, board_x, board_y FROM card WHERE last_play = 2 AND card_location_arg = ".$player_id;
+        $mutation_level = self::getCollectionFromDb( $sql );
+        $sql = 'UPDATE card SET mutation = mutation - 1 WHERE last_play = 2 AND card_location_arg = '.$player_id;
+        self::DbQuery( $sql );
+        // notify the player to revert the mutation effect
+        if (count($mutation_level) > 0) {
+            foreach ($mutation_level as $card_id => $card_info) {
+                $notif_data = array(
+                    "player_id" => $player_id,
+                    "x"=> $card_info['board_x'],
+                    "y"=> $card_info['board_y'],
+                    "card_id" => $card_id,
+                    "kind" => $card_info['card_type_arg'],
+                    "mutation_level" => $card_info['mutation'],
+                    "undo" => true);
+                self::NotifyPlayer( $player_id, "muted_monster", '', $notif_data);
+            }
+        }
+        self::dump('cehcked for mutation : ', '');
+        $possiblemoves = array();
+        if ($noplacement) {
+            //no placement option available (the player refreshed the page while in the middle of the turn)
+            $this->updateLocalDB('card');
+            $cardsOnBoard = $this->getCardsOnBoard($player_id,null,0);
+            $avail_place = array();
+            $used_place = $this->getUsedBoard($cardsOnBoard);
+            $allowed_vert = [[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[1,2],[0,2],[-1,2],[-1,1],[-1,0]]; // allowed relative position for vertical tile
+            $allowed_hor = [[-1,-1],[0,-1],[1,-1],[2,-1],[2,0],[2,1],[1,1],[0,1],[-1,1],[-1,0]]; // allowed relative position for horizontal tile
+            // retreive the possible and allowed position from tile already placed on board
+            foreach ($cardsOnBoard as $card_id => $card_info) {
+                $x = $card_info['board_x'];
+                $y = $card_info['board_y'];
+                $possible_pos = ($card_info['card_type'] == 2) ? array_map(array($this,'asum'),$allowed_hor,array_fill(0,count($allowed_hor),[$x,$y])) : array_map(array($this,'asum'),$allowed_vert,array_fill(0,count($allowed_vert),[$x,$y])) ;
+                foreach ($possible_pos as $key => $pos) {
+                    if (in_array($pos, $used_place) or in_array($pos, $avail_place)) {
+                    } else {
+                        $avail_place[] = $pos;
+                    }
+                }
+            }
+            // add possible position and allowed position around explorer tile
+            $explo_tile_pos = [[0,0], [1,0]];
+            foreach ($explo_tile_pos as $key => $pos) {
+                $x = $pos[0];
+                $y = $pos[1];
+                $possible_pos = array_map(array($this,'asum'),$allowed_vert,array_fill(0,count($allowed_vert),[$x,$y])) ;
+                foreach ($possible_pos as $ppkey => $pppos) {
+                    if (in_array($pppos, $used_place) or in_array($pppos, $avail_place)) {
+                    } else {
+                        $avail_place[] = $pppos;
+                    }
+                }
+            }
+            $placement_dirV = array();
+            $placement_dirH = array();
+            foreach ($avail_place as $key => $value) {
+                // define extension direction and check if position is actually valid (see commit 8045c6d49af95b78abec49dfe725fcec729363de for previous method)
+                if (
+                    (in_array([$value[0] + 1, $value[1] - 1], $used_place) and  in_array([$value[0], $value[1] - 1], $avail_place) and in_array([$value[0] + 1, $value[1]], $avail_place))//BL
+                    or (in_array([$value[0] - 1, $value[1] - 1], $used_place) and in_array([$value[0], $value[1] - 1], $avail_place) and in_array([$value[0] - 1, $value[1]], $avail_place)) // BR
+                    or ((in_array([$value[0] - 1, $value[1]], $used_place) or in_array([$value[0] + 1, $value[1]], $used_place)) and in_array([$value[0], $value[1] + 1], $used_place) and in_array([$value[0], $value[1] - 1], $avail_place) ) // inscrements
+                    or (in_array([$value[0], $value[1] - 1 ], $used_place) and in_array([$value[0], $value[1] + 1], $used_place))
+                    ) {
+                    $placement_dirV[] = 'X';
+                } else if (in_array([$value[0], $value[1] + 1], $used_place)) {
+                    $placement_dirV[] = 'U';
+                } else {
+                    $placement_dirV[] = 'D';
+                }
+                if (
+                    (in_array([$value[0] - 1, $value[1]], $avail_place) and in_array([$value[0] , $value[1] + 1], $avail_place) and in_array([$value[0] - 1, $value[1]+1], $used_place)) //TR (free on left and free on bottom and busy on bottom-left)
+                    or (in_array([$value[0] - 1, $value[1]], $avail_place) and in_array([$value[0] , $value[1] - 1], $avail_place) and in_array([$value[0] - 1, $value[1]-1], $used_place)) //BR (free on left and free on top and busy on top-left)
+                    or (in_array([$value[0] - 1, $value[1]], $used_place) and in_array([$value[0] + 1, $value[1]], $used_place)) // between 2 tiles
+                    or (in_array([$value[0] + 1, $value[1]], $used_place) and in_array([$value[0] - 1, $value[1]], $avail_place) and !(in_array([$value[0] - 2, $value[1]], $avail_place) and in_array([$value[0]-1 , $value[1] + 1], $avail_place))) // used on right, free on left (but the left not flagged as TR)
+                    ) {
+                    $placement_dirH[] = 'X';
+                } else if (in_array([$value[0] + 1, $value[1]], $used_place)) {
+                    $placement_dirH[] = 'L';
+                } else {
+                    $placement_dirH[] = 'R';
+                }
+            }
+            $possiblemoves = array(
+                    'possibleMoves' => $avail_place,
+                    'placement_dirV' => $placement_dirV,
+                    'placement_dirH' => $placement_dirH);
+        }
+        $notif_data = array('card_id' => $last_played_card, 'placement' => $possiblemoves);
+        self::dump('cnotif_data', $notif_data);
+        self::NotifyPlayer( $player_id, "undo_place", '', $notif_data );
     }
 
     
