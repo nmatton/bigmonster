@@ -39,7 +39,7 @@ class BigMonster extends Table
                          "teamdefined" => 15,
                          "explotileplacement" => 16,
                          "endcountdowntimestamp" => 17,
-                         "playmode" => 101,
+                         "bm_playmode" => 101,
                          "hidescore" => 102,
                          '3pdraft' => 103) );
 
@@ -92,6 +92,8 @@ class BigMonster extends Table
         self::setGameStateInitialValue( 'explotileplacement', 0 ); // set to 1 when 19th tile is being placed
         self::setGameStateInitialValue( 'endcountdowntimestamp', -1 ); // value between 0 and 1000, define the end time of the countdown
         
+
+
         // Create cards
         $cards = array ();
         foreach ( $this->tiles_info as $type_id => $tile_type ) {
@@ -321,6 +323,10 @@ class BigMonster extends Table
     */
     protected function getAllDatas()
     {
+        // !! DIRTY FIX !! force value of bm_playmode to 1 if set to 0
+        if (self::getGameStateValue('bm_playmode') == 0) {
+            self::setGameStateValue('bm_playmode', 1);
+        }
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();
@@ -367,7 +373,12 @@ class BigMonster extends Table
             } else {
                 $info_id = $medal_id;
             }
-            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$info_id]['pts']];
+            self::dump('info_id',$info_id);
+            self::dump('medal_id',$medal_id);
+            self::dump('matching_pts_back_id',$this->matching_pts_back_id);
+            self::dump('bm_playmode',self::getGameStateValue( 'bm_playmode' ));
+            self::dump('medals_infos',$this->medals_infos);
+            $medals[$medal_id]['back_id'] = $this->matching_pts_back_id[self::getGameStateValue( 'bm_playmode' )][$this->medals_infos[$info_id]['pts']];
         }
         $result['medals'] = $medals;
         $result['first_player'] = self::getGameStateValue( 'first_player' );
@@ -689,7 +700,8 @@ class BigMonster extends Table
 
     public function test()
     {
-        $res = $this->checkMedalSuccess(7);
+        //self::setGameStateValue('3pdraft', 1);
+        $res = self::getGameStateValue('3pdraft');
         print_r($res);
         $medal_id=81;
     }
@@ -904,7 +916,7 @@ class BigMonster extends Table
 
     // check if teamplay mode is selected
     public function isTeamPlay() {
-        return intval($this->getGameStateValue('playmode')) === 2;
+        return intval($this->getGameStateValue('bm_playmode')) === 2;
     }
 
     // is 3p draft mode ?
@@ -2305,14 +2317,14 @@ class BigMonster extends Table
         if ($sel_action == 0) {
             // selected card is to be played
             $this->cards->moveCard($sel_card,'hand', $player_id);
-            $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster in the ${row} row');
+            $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster in the ${row_name} row');
         } elseif ($sel_action == 1) {
             $this->cards->moveCard($sel_card,'discard', $player_id);
-            $log_msg = clienttranslate('${player_name} discarded the ${monster_kind_name} monster in the ${row} row');
+            $log_msg = clienttranslate('${player_name} discarded the ${monster_kind_name} monster in the ${row_name} row');
         } elseif ($sel_action == 3) {
             $this->cards->moveCard($sel_card,'hand', $player_id);
             $this->cards->moveCard($rem_cards[0],'discard', $player_id);
-            $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster and discarded the ${monster_kind_name_dicard} monster in the ${row} row');
+            $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster and discarded the ${monster_kind_name_dicard} monster in the ${row_name} row');
         } else {
             throw new BgaVisibleSystemException (clienttranslate("Wrong sel_action value !"));
         }
@@ -2323,12 +2335,13 @@ class BigMonster extends Table
             "player_name" => self::getPlayerNameById($player_id),
             "monster_kind_name" => $this->tiles_info[$kind_monster]['name'],
             "monster_kind" => $kind_monster,
+            "row_name" => $sel_row,
             "row" => $sel_row,
             "card_id" => $sel_card,
             "action" => $sel_action,
             "monster_kind_name_dicard" => $this->tiles_info[$kind_monster_discard]['name'],
             "discard_card_id" => $rem_cards[0],
-            'i18n' => array( 'monster_kind_name' , 'row', 'monster_kind_name_dicard' ) )
+            'i18n' => array( 'monster_kind_name' , 'row_name', 'monster_kind_name_dicard' ) )
         );
         if ($sel_action == 0) {
             self::setGameStateValue( 'active_row', $source_row );
@@ -2459,9 +2472,6 @@ class BigMonster extends Table
         $sql = "SELECT player_id, GROUP_CONCAT( explorer_id ) AS 'explorer_id' FROM explorers WHERE selected = 0 GROUP BY player_id";
         $explorers_attr = self::getCollectionFromDB( $sql );
         $data = array('_private'=>array());
-        if ($this->isTeamPlay()) {
-            $team = $this->get_teams(true);
-        }
         foreach ($explorers_attr as $player_id  => $explorer_id) {
             $explo_ids = explode(",", $explorer_id['explorer_id']);
             for ($i=0; $i < count($explo_ids) ; $i++) {
@@ -2471,7 +2481,7 @@ class BigMonster extends Table
                     'i18n' => array( 'explorer_info' ));
             }
             if ($this->isTeamPlay()) {
-                $data['_private'][$player_id]['team'] =$team;
+                $data['team'] =$this->get_teams(true);
             }
         }
         return $data;
@@ -2842,11 +2852,11 @@ class BigMonster extends Table
                             $medal_sid = floor($medal_id / 10);
                             $medal_name = $this->medals_infos[$medal_sid]['name_team'];
                             $pts = $this->medals_infos[$medal_sid]['pts'];
-                            $back_id = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$medal_sid]['pts']] ;
+                            $back_id = $this->matching_pts_back_id[self::getGameStateValue( 'bm_playmode' )][$this->medals_infos[$medal_sid]['pts']] ;
                         } else {
                             $medal_name = $this->medals_infos[$medal_details['medal_id']]['name'];
                             $pts = $this->medals_infos[$medal_details['medal_id']]['pts'];
-                            $back_id = $this->matching_pts_back_id[self::getGameStateValue( 'playmode' )][$this->medals_infos[$medal_id]['pts']] ;
+                            $back_id = $this->matching_pts_back_id[self::getGameStateValue( 'bm_playmode' )][$this->medals_infos[$medal_id]['pts']] ;
                         }
                         self::NotifyAllPlayers("wonMedal", clienttranslate('${player_name} won the "${medal_name}" medal!'), array(
                             "player_name" => self::getPlayerNameById($player_id),

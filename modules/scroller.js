@@ -195,16 +195,12 @@ class Scroller
     let min_x = Math.min.apply(Math, x_vals) *2;
     let max_y = Math.max.apply(Math, yvals) *2 +100;
     let min_y = Math.min.apply(Math, yvals) *2;
-    debug("max_x="+max_x+" max_y="+max_y+" min_x="+min_x+" min_y="+min_y);
     let center_x = (max_x + min_x)/2;
     let center_y = (max_y + min_y)/2;
-    debug("center_x="+center_x+" center_y="+center_y);
     if (max_y % 25 != 0 || min_y% 25 != 0) {
       center_y -= 32
-      debug('correct center_y to '+center_y);
     }
     if (isNaN(center_x) || isNaN(center_x)) {
-      debug('center_x or center_y is NaN');
       this.scrollTo(-50, -50);
       return;
     } else {
@@ -222,7 +218,6 @@ class Scroller
     let containerHeight = ScrollerContainer.offsetHeight;
     let n_y = (max_y - min_y) /100;
     let n_x = (max_x - min_x) / 50;
-    debug("n_x="+n_x+" n_y="+n_y);
     let zoom_x = 1;
     let zoom_y = 1;
     if (n_y <= 4) {
@@ -247,9 +242,7 @@ class Scroller
     } else if (n_x > 16) {
       zoom_x = 0.6
     }
-    debug("zoom_x="+zoom_x+" zoom_y="+zoom_y);
     let zoom = Math.min(zoom_x, zoom_y);
-    debug("zoom="+zoom);
     this.setScale(zoom);
   }
 }

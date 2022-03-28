@@ -50,20 +50,12 @@ function (dojo, declare) {
             this.active_row = 0; // row that can be selected (0 = both; 1 = upper; 2 = lower) (in 2-3 players)
             this.selected_tile_type = 0; // type of monster selected
             this.hide_tiles = false; // hide tiles when countdown is running
+            this.coutdownpassed = false // coutdown expired
 
         },
         
         /*
             setup:
-            
-            This method must set up the game user interface according to current game situation specified
-            in parameters.
-            
-            The method is called each time the game interface is displayed to a player, ie:
-            _ when the game starts
-            _ when a player refreshes the game page (F5)
-            
-            "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
         */
             setLoader(value, max) {
                 this.inherited(arguments);
@@ -94,7 +86,7 @@ function (dojo, declare) {
             this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
             this.team_defined = toint(gamedatas.teamdefined);
             this.team_ui_setup = false;
-            // **SETUP SCROLL AREAS** //
+            // **SCROLL AREAS** //
             this.currentPlayer = this.player_id;
             this.nums_of_players = Object.keys(gamedatas.players).length;
             this.boards = [];
@@ -135,38 +127,30 @@ function (dojo, declare) {
                  this.teams_values.forEach(element => {
                     this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
                 });
-                if (this.isSpectator) {
-                    for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
-                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                    for (o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--) {
-                        dojo.place( Object.keys(gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                        if ( Object.keys(gamedatas.players)[o] == this.currentPlayer)
-                            break
+                debug('adding team setup')
+                dojo.query('.player_info_team').style('display','block')
+                // start by placing other teams
+                for (let team = this.teams_ordered.length-1; team >= 0; team--) {
+                    if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
+                        const team_members = this.teams_ordered[team];
+                        team_members.forEach(e => {
+                            if (team != this.player_team) {
+                                let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                                dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
+                                dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
+                                $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
+                                // add banner on player miniboard
+                                let tbDiv = this.format_block('jstpl_team_banner', {
+                                    color : '#'+team_color,
+                                    team_nr: toint(team) + 1
+                                });
+                                player_board = $('player_board_'+e)
+                                dojo.place( tbDiv , player_board);
+                            }
+                        });
                     }
-                } else {
-                    dojo.query('.player_info_team').style('display','block')
-                    // start by placing other teams
-                    for (const team in this.teams_ordered) {
-                        if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
-                            const team_members = this.teams_ordered[team];
-                            team_members.forEach(e => {
-                                if (team != this.player_team) {
-                                    let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
-                                    dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
-                                    dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
-                                    $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
-                                    // add banner on player miniboard
-                                    let tbDiv = this.format_block('jstpl_team_banner', {
-                                        color : '#'+team_color,
-                                        team_nr: toint(team) + 1
-                                    });
-                                    player_board = $('player_board_'+e)
-                                    dojo.place( tbDiv , player_board);
-                                }
-    
-                            });
-                        }
-                    }
+                }
+                if (!this.isSpectator) {
                     // place current player scroll area
                     let team_color = this.gamedatas["players"][this.teams_ordered[this.player_team][0]]['color']
                     let teammate = this.getOtherTeamMember(this.teams, this.player_team, this.currentPlayer)
@@ -189,7 +173,6 @@ function (dojo, declare) {
                     // add banner on player miniboard
                     player_board = $('player_board_'+teammate)
                     dojo.place( tbDiv , player_board);
-                    
                 }
                 centerscroll = true;
             }
@@ -200,16 +183,7 @@ function (dojo, declare) {
                     }
                 }
             }
-            // **** PLAYERS BOARDS SETUP **** //
 
-            if (this.isReadOnly() && typeof g_replayFrom == 'undefined' && !g_archive_mode) {
-                dojo.destroy('myhand_wrap');
-                dojo.query('.hand_wrapper').style('display','none')
-                debug('spector mode');
-/*                 let oldParent = document.getElementById('Boards');
-                let newParent = document.getElementById('MainBoardArea');
-                while (oldParent.childNodes.length) { 	newParent.appendChild(oldParent.firstChild); } */
-            }
             // ** EXPLORER TILES ** //
             this.explorers = this.gamedatas.explorers;
             for (var i in this.gamedatas.explorers) {
@@ -287,16 +261,16 @@ function (dojo, declare) {
                 dojo.destroy('scoring-row-teamtotal');
             }
             // **** TILES AND HAND MANAGEMENT **** //
-            if (!this.isSpectator) {
-                // ** Create hands of tiles ** //
-                if (this.nums_of_players >= 4 || this.is3pdraft) {
+            // ** Create hands of tiles ** //
+            if (this.nums_of_players >= 4 || this.is3pdraft) {
+                if (!this.isSpectator) {
+                    // 4 or more players, or 3 player draft
                     // remove board title
                     dojo.destroy('bm_title_board');
                     // remove pile card count (the rem cards is visible in hand)
                     dojo.destroy('card_left_count');
                     // remove "gridded" class
                     dojo.query('#myhand_area').removeClass('bm_gridded')
-                    //TODO: ADD A COUNTER OF ROUND
                     this.playerHand = new ebg.stock(); // new stock object for hand
                     this.playerHand.create( this, $('myhand'), this.tiledwidth, this.tileheight );
                     this.playerHand.setSelectionMode( 1 ) // only one card at a time can be selected
@@ -324,96 +298,96 @@ function (dojo, declare) {
                     // add listeners on cards on hand
                     dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
                 } else {
-                    // remove the ship area
-                    dojo.destroy('shipwrap');
-                    // remove my hand title
-                    dojo.destroy('bm_title_myhand');
-                    // update the number in card remaining count
-                    dojo.query('#card_counter').innerHTML(this.gamedatas.remaining_piles)
-                    // rename my_hand div and add extra row for tiles selection
-                    $('myhand').id='upper_row';
-                    dojo.place( "<div id='lower_row' class='whiteblock bm_tileArea'></div>" , $('myhand_area'));
-                    this.upper_row = new ebg.stock();
-                    this.lower_row = new ebg.stock();
-                    this.upper_row.create( this, $('upper_row'), this.tiledwidth, this.tileheight );
-                    this.lower_row.create( this, $('lower_row'), this.tiledwidth, this.tileheight );
-                    this.upper_row.setSelectionMode( 1 ) // only one card at a time can be selected
-                    this.lower_row.setSelectionMode( 1 ) // only one card at a time can be selected
-                    this.upper_row.extraClasses='bm_margin_stock';
-                    this.lower_row.extraClasses='bm_margin_stock';
-                    this.upper_row.image_items_per_row = this.tilePerRow;
-                    this.lower_row.image_items_per_row = this.tilePerRow;
-                    var pos = 0;
-                    var kind_per_type = [4,2,2,5,1,9,1,6,1];
-                    for (var type = 1; type <= 8; type++) {
-                        for (var kind_monster = 1; kind_monster <= kind_per_type[type-1]; kind_monster++) {
-                            // Build card type id
-                            var card_type_id = this.getCardUniqueId(type, kind_monster);
-                            pos = (type - 1) * 9 + kind_monster - 1                
-                            this.upper_row.addItemType(card_type_id, card_type_id, g_gamethemeurl + this.tiles_img_path, pos);
-                            this.lower_row.addItemType(card_type_id, card_type_id, g_gamethemeurl + this.tiles_img_path, pos);
-                        }
+                    dojo.destroy('myhand_wrap');
+                    dojo.query('.hand_wrapper').style('display','none')
+                }
+            } else {
+                // 2 or 3 players, variant mode
+                // remove the ship area
+                dojo.destroy('shipwrap');
+                // remove my hand title
+                dojo.destroy('bm_title_myhand');
+                // update the number in card remaining count
+                dojo.query('#card_counter').innerHTML(this.gamedatas.remaining_piles)
+                // rename my_hand div and add extra row for tiles selection
+                $('myhand').id='upper_row';
+                dojo.place( "<div id='lower_row' class='whiteblock bm_tileArea'></div>" , $('myhand_area'));
+                this.upper_row = new ebg.stock();
+                this.lower_row = new ebg.stock();
+                this.upper_row.create( this, $('upper_row'), this.tiledwidth, this.tileheight );
+                this.lower_row.create( this, $('lower_row'), this.tiledwidth, this.tileheight );
+                this.upper_row.setSelectionMode( 1 ) // only one card at a time can be selected
+                this.lower_row.setSelectionMode( 1 ) // only one card at a time can be selected
+                this.upper_row.extraClasses='bm_margin_stock';
+                this.lower_row.extraClasses='bm_margin_stock';
+                this.upper_row.image_items_per_row = this.tilePerRow;
+                this.lower_row.image_items_per_row = this.tilePerRow;
+                var pos = 0;
+                var kind_per_type = [4,2,2,5,1,9,1,6,1];
+                for (var type = 1; type <= 8; type++) {
+                    for (var kind_monster = 1; kind_monster <= kind_per_type[type-1]; kind_monster++) {
+                        // Build card type id
+                        var card_type_id = this.getCardUniqueId(type, kind_monster);
+                        pos = (type - 1) * 9 + kind_monster - 1                
+                        this.upper_row.addItemType(card_type_id, card_type_id, g_gamethemeurl + this.tiles_img_path, pos);
+                        this.lower_row.addItemType(card_type_id, card_type_id, g_gamethemeurl + this.tiles_img_path, pos);
                     }
-    
-                    // SET CARDS ON ROWS
-                    this.active_row = this.gamedatas.active_row;
-                    for ( var i in this.gamedatas.tilesonrows) {
-                        var card = this.gamedatas.tilesonrows[i];
-                        var row = card.location_arg;
-                        var type = card.type;
-                        var kind_monster = card.type_arg;
-                        if (toint(row) == 1) {
-                            this.upper_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                            this.setTileToolTip(card.id, type, kind_monster, 'upper_row');
-                        } else if (toint(row) == 2) {
-                            this.lower_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                            this.setTileToolTip(card.id, type, kind_monster, 'lower_row');
-                        } else {
-                            // row is equal to player ID => selected card
-                            if (toint(this.active_row) == 1) {
-                                var tilerow = this.upper_row;
-                                var rowname = 'upper_row';
-                            } else {
-                                var tilerow = this.lower_row;
-                                var rowname = 'lower_row';
-                            }
-                            tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                            dojo.addClass(rowname + '_item_'+card.id , 'selected');
-                            dojo.addClass(rowname + '_item_'+card.id , 'disabled');
-                            this.setTileToolTip(card.id, type, kind_monster, rowname);
-                            this.selected_tile_id = toint(card.id);
-                            this.changePageTitle('discard');
-                            this.selected_tile_type = card.type;
-                        }
-                    }
-                    // bottom row
-/*                     for ( var i in this.gamedatas.tiles_lower_row) {
-                        let card = this.gamedatas.tiles_lower_row[i];
-                        let type = card.type;
-                        let kind_monster = card.type_arg;
+                }
+
+                // SET CARDS ON ROWS
+                this.active_row = this.gamedatas.active_row;
+                for ( var i in this.gamedatas.tilesonrows) {
+                    var card = this.gamedatas.tilesonrows[i];
+                    var row = card.location_arg;
+                    var type = card.type;
+                    var kind_monster = card.type_arg;
+                    if (toint(row) == 1) {
+                        this.upper_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                        this.setTileToolTip(card.id, type, kind_monster, 'upper_row');
+                    } else if (toint(row) == 2) {
                         this.lower_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                        this.setTileToolTip(card.id, type, kind_monster,'lower_row');
-                    } */
+                        this.setTileToolTip(card.id, type, kind_monster, 'lower_row');
+                    } else {
+                        // row is equal to player ID => selected card
+                        if (toint(this.active_row) == 1) {
+                            var tilerow = this.upper_row;
+                            var rowname = 'upper_row';
+                        } else {
+                            var tilerow = this.lower_row;
+                            var rowname = 'lower_row';
+                        }
+                        tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
+                        dojo.addClass(rowname + '_item_'+card.id , 'selected');
+                        dojo.addClass(rowname + '_item_'+card.id , 'disabled');
+                        this.setTileToolTip(card.id, type, kind_monster, rowname);
+                        this.selected_tile_id = toint(card.id);
+                        this.changePageTitle('discard');
+                        this.selected_tile_type = card.type;
+                    }
+                }
+                if (!this.isSpectator) {
                     dojo.connect( this.upper_row, 'onChangeSelection', this, 'onTileInRowSelection' );
                     dojo.connect( this.lower_row, 'onChangeSelection', this, 'onTileInRowSelection' );
-                    if (toint(this.active_row) == 1) {
-                        var id_list = this.lower_row.getAllItems();
-                        var rowname = "lower_row";
-                        this.lower_row.setSelectionMode( 0 )
-                    } else if (toint(this.active_row) == 2) {
-                        var id_list = this.upper_row.getAllItems();
-                        var rowname = "upper_row";
-                        this.upper_row.setSelectionMode( 0 )
-                    }
-                    if (toint(this.active_row) > 0) {
-                        id_list.forEach(element => {
-                            dojo.addClass(rowname+'_item_'+element['id'], 'disabled');
-                        });
-                    }
+                } else {
+                    this.lower_row.setSelectionMode( 0 )
+                    this.upper_row.setSelectionMode( 0 )
                 }
-                if (gamedatas.gamestate.name == "teamSelection") {
+                if (toint(this.active_row) == 1) {
+                    var id_list = this.lower_row.getAllItems();
+                    var rowname = "lower_row";
+                    this.lower_row.setSelectionMode( 0 )
+                } else if (toint(this.active_row) == 2) {
+                    var id_list = this.upper_row.getAllItems();
+                    var rowname = "upper_row";
+                    this.upper_row.setSelectionMode( 0 )
+                }
+                if (toint(this.active_row) > 0) {
+                    id_list.forEach(element => {
+                        dojo.addClass(rowname+'_item_'+element['id'], 'disabled');
+                    });
                 }
             }
+            
 
             
 
@@ -437,7 +411,12 @@ function (dojo, declare) {
                     let info_id = toint((medal_id>10) ? Math.floor(medal_id/10):medal_id);
                     let medal_type = (medal_id>10)?2:1;
                     let location_id = medal['player_id'];
-                    let back_id = medal['back_id'];
+                    // !! DIRTY HOTFIX !!
+                    if (medal['back_id'] === null) {
+                        var back_id = 2;
+                    } else {
+                        var back_id = medal['back_id'];
+                    }
                     if (location_id == 0) {
                         // add the medal on stock of medals
                         let cardDiv = this.format_block('jstpl_medal_player_stock', {
@@ -522,13 +501,6 @@ function (dojo, declare) {
             let center_btn = $('general_center_btn');
             dojo.connect(center_btn, 'click', () => this.onScreenWidthChange());
 
-            // add button to show front/back
-            /*  this code might be usefull...
-                <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-                </label>
-            */
             // **** SHIP TILES MANAGEMENT **** //
 
             // ** add listeners on ship tiles ** //
@@ -578,24 +550,14 @@ function (dojo, declare) {
         //
         onEnteringState: function( stateName, args )
         {
-            //debug('entering stage' + stateName);
             
             switch( stateName )
             {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Show some HTML block at this game state
-                dojo.style( 'my_html_block_id', 'display', 'block' );
-                
-                break;
-           */
-           
             case 'explorerSelection':
-                explorers = args.args['_private']['explorers'];
+                debug('onEnteringState: explorerSelection');
+                debug(args);
                 if (!this.isReadOnly() || g_archive_mode) {
+                    explorers = args.args['_private']['explorers'];
                     // show a popup for selecting explorer
                     // active only for players (not for spectators)
                     if (explorers.length == 2 || g_archive_mode) {
@@ -618,9 +580,10 @@ function (dojo, declare) {
                     }
                 }
                 // if team mode, add the team specific assets
+                
                 if (this.isTeamPlay && !this.team_ui_setup) {
                     // add the scroll areas (where tiles are displayed) + banner on player miniboard
-                    this.teams = args.args['_private']['team'];
+                    this.teams = args.args['team'];
                     this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
                     this.team_ui_setup = true;
                     player_team = this.teams[this.currentPlayer];
@@ -631,41 +594,35 @@ function (dojo, declare) {
                     this.teams_values.forEach(element => {
                         this.teams_ordered[element] = Object.keys(this.teams).filter(key => this.teams[key] == element); 
                     });
-                    if (this.isSpectator) {
-                        for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--)
-                            dojo.place( Object.keys(this.gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                        for (o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
-                            dojo.place( Object.keys(this.gamedatas.players)[o] + "_scrollmap", "Boards", "after");
-                            if ( Object.keys(this.gamedatas.players)[o] == this.currentPlayer)
-                                break
+
+                    debug('adding team display');
+                    dojo.query('.player_info_team').style('display','block')
+                    // start by placing other teams
+                    for (let team = this.teams_ordered.length-1; team >= 0; team--) {
+                        if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
+                            debug('processing team '+ team);
+                            const team_members = this.teams_ordered[team];
+                            debug('team_members '+ team_members);
+                            team_members.forEach(e => {
+                                if (team != player_team) {
+                                    debug('placing team '+ team + ' for player '+ e);
+                                    let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
+                                    dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
+                                    dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
+                                    $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
+                                    // add banner on player miniboard
+                                    let tbDiv = this.format_block('jstpl_team_banner', {
+                                        color : '#'+team_color,
+                                        team_nr: toint(team) + 1
+                                    });
+                                    player_board = $('player_board_'+e)
+                                    dojo.place( tbDiv , player_board);
+                                }
+    
+                            });
                         }
-                    } else {
-                        dojo.query('.player_info_team').style('display','block')
-                        // start by placing other teams
-                        for (const team in this.teams_ordered) {
-                            if (Object.hasOwnProperty.call(this.teams_ordered, team)) {
-                                debug('processing team '+ team);
-                                const team_members = this.teams_ordered[team];
-                                debug('team_members '+ team_members);
-                                team_members.forEach(e => {
-                                    if (team != player_team) {
-                                        debug('placing team '+ team + ' for player '+ e);
-                                        let team_color = this.gamedatas["players"][this.teams_ordered[team][0]]['color']
-                                        dojo.place(e + "_scrollmap_wrapper", "Boards", "after"); // place the scroll area on right place
-                                        dojo.style(e + '_team_info','background-color','#'+team_color); // set the team color
-                                        $(e + '_team_info').innerHTML='TEAM ' + (toint(team) + 1); // set the team name
-                                        // add banner on player miniboard
-                                        let tbDiv = this.format_block('jstpl_team_banner', {
-                                            color : '#'+team_color,
-                                            team_nr: toint(team) + 1
-                                        });
-                                        player_board = $('player_board_'+e)
-                                        dojo.place( tbDiv , player_board);
-                                    }
-        
-                                });
-                            }
-                        }
+                    }
+                    if (!this.isSpectator) {
                         // place current player scroll area
                         debug('placing current player '+ this.currentPlayer);
                         let team_color = this.gamedatas["players"][this.teams_ordered[player_team][0]]['color']
@@ -690,7 +647,6 @@ function (dojo, declare) {
                         // add banner on player miniboard
                         player_board = $('player_board_'+teammate)
                         dojo.place( tbDiv , player_board);
-                        
                     }
                     for (var t of Object.keys(this.gamedatas.players)) {
                         if (this.boards[t]) {
@@ -715,7 +671,7 @@ function (dojo, declare) {
                     debug('removing explo popup')
                     dojo.destroy('bm_popup')
                 }
-                if (args.args['coutdowntime'] > 0 && !this.isReadOnly()) {
+                if (args.args['coutdowntime'] > 0 && !this.isReadOnly() && this.bRealtime && !this.coutdownpassed) {
                     this.coutdowntime = args.args['coutdowntime'];
                     // set countdown
                     debug('coutdowntime '+ this.coutdowntime);
@@ -741,6 +697,8 @@ function (dojo, declare) {
                             dojo.query('.bm_margin_stock').removeClass('bm_stock_invisible');
                         }
                     }, 1000);
+                } else {
+                    this.coutdownpassed = true
                 }
                 dojo.query(".possibleMoveV").forEach(function(node, index, nodelist){
                     dojo.destroy(node);
@@ -753,8 +711,11 @@ function (dojo, declare) {
                 this.active_row = args.args[0];
                 if (this.active_row == 0) {
                     // reactivate all tiles
-                    this.upper_row.setSelectionMode( 1 );
-                    this.lower_row.setSelectionMode( 1 );
+                    if (!this.isSpectator) {
+                        // keep selectionmode 0 if spectator
+                        this.upper_row.setSelectionMode( 1 );
+                        this.lower_row.setSelectionMode( 1 );
+                    }
                     dojo.query('.stockitem').removeClass('disabled')
                 }
                 if (this.new_turn) {
@@ -785,43 +746,45 @@ function (dojo, declare) {
                 });
                 break;
             case 'placeTile':
-                if (this.playerHand.items.length > 0) {
-                    // some card on hand to be placed (if length = 0 means that the tile has been placed previously)
-                    var pos = args.args['_private']['possibleMoves'];
-                    var hdir = args.args['_private']['placement_dirH'];
-                    var vdir = args.args['_private']['placement_dirV'];
-                    var dir;
-                    var kind_monter = Math.floor(this.playerHand.items[0].type / 10);
-                    this.lastPossibleMoveIdx = [0,0]; // initiate recorded move position
-                    this.dbMovepos = [0,0]; // selected pos to send to DB
-                    // show the available places to put tiles
-                    for (var idx in pos) {
-                        if (kind_monter == 1) {
-                            if (hdir[idx] == "X") {
-                                continue;
+                if (!this.isSpectator){
+                    if (this.playerHand.items.length > 0) {
+                        // some card on hand to be placed (if length = 0 means that the tile has been placed previously)
+                        var pos = args.args['_private']['possibleMoves'];
+                        var hdir = args.args['_private']['placement_dirH'];
+                        var vdir = args.args['_private']['placement_dirV'];
+                        var dir;
+                        var kind_monter = Math.floor(this.playerHand.items[0].type / 10);
+                        this.lastPossibleMoveIdx = [0,0]; // initiate recorded move position
+                        this.dbMovepos = [0,0]; // selected pos to send to DB
+                        // show the available places to put tiles
+                        for (var idx in pos) {
+                            if (kind_monter == 1) {
+                                if (hdir[idx] == "X") {
+                                    continue;
+                                }
+                                dir = hdir[idx]
+                            } else {
+                                if (vdir[idx] == "X") {
+                                    continue;
+                                }
+                                dir = vdir[idx]
                             }
-                            dir = hdir[idx]
-                        } else {
-                            if (vdir[idx] == "X") {
-                                continue;
-                            }
-                            dir = vdir[idx]
+                            this.addPossiblePlacement(pos[idx][0],pos[idx][1], dir);
                         }
-                        this.addPossiblePlacement(pos[idx][0],pos[idx][1], dir);
-                    }
-                    // connect click event
-                    dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
-                    dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
-                } else {
-                    // place tile on board that are played (but not displayed due to "last_play = 1")
-                    for (const prop in args.args['_private']) {
-                        let monster_type = toint(args.args['_private'][prop]['card_type']);
-                        let monster_kind = toint(args.args['_private'][prop]['card_type_arg']);
-                        let mutation = toint(args.args['_private'][prop]['mutation']);
-                        let card_id = prop;
-                        let tileNum = (monster_type - 1 ) * 10 + monster_kind - 1;
-                        const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);
-                        this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                        // connect click event
+                        dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
+                        dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
+                    } else {
+                        // place tile on board that are played (but not displayed due to "last_play = 1")
+                        for (const prop in args.args['_private']) {
+                            let monster_type = toint(args.args['_private'][prop]['card_type']);
+                            let monster_kind = toint(args.args['_private'][prop]['card_type_arg']);
+                            let mutation = toint(args.args['_private'][prop]['mutation']);
+                            let card_id = prop;
+                            let tileNum = (monster_type - 1 ) * 10 + monster_kind - 1;
+                            const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);
+                            this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                        }
                     }
                 }
                 break;
@@ -914,17 +877,6 @@ function (dojo, declare) {
             switch( stateName )
             {
             
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Hide the HTML block we are displaying only during this game state
-                dojo.style( 'my_html_block_id', 'display', 'none' );
-                
-                break;
-           */
-           
-           
             case 'tileSelection':
                 this.busyShips = [];
                 break;
@@ -944,18 +896,6 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
-/*               
-                 Example:
- 
-                 case 'myGameState':
-                    
-                    // Add 3 action buttons in the action status bar:
-                    
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
-                    break;
-*/
                     case 'placeTile':
                         if (this.tile_selected) {
                             dojo.empty('customActions');
@@ -989,23 +929,23 @@ function (dojo, declare) {
             notif_loadBug: function (n) {
                 function fetchNextUrl() {
                   var url = n.args.urls.shift();
-                  console.log('Fetching URL', url);
+                  debug('Fetching URL', url);
                   dojo.xhrGet({
                     url: url,
                     load: function (success) {
                       // This could be improved, I don't check the response for errors
-                      console.log('Success for URL', url, success);
+                      debug('Success for URL', url, success);
                       if (n.args.urls.length > 0) {
                         fetchNextUrl();
                       } else {
-                        console.log('Done, reloading page');
+                        debug('Done, reloading page');
                         window.location.reload();
                       }
                     }
                   });
                 }
             
-                console.log('Notif: load bug', n.args);
+                debug('Notif: load bug', n.args);
                 fetchNextUrl();
               },
         /* 
@@ -1709,17 +1649,6 @@ function (dojo, declare) {
             this.updatePageTitle();
         },
         //** Player's action
-        
-        /*
-        
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
-            game objects).
-            
-            Most of the time, these methods:
-            _ check the action is possible at this game state.
-            _ make a call to the game server
-        
-        */
 
         selectTeamPlayer: function(in_pID) {
             const targer_player = in_pID;
@@ -2115,18 +2044,29 @@ function (dojo, declare) {
         {
             
             dojo.subscribe( 'AskTeamSelection', this, "notif_AskTeamSelection" );
+            this.notifqueue.setSynchronous( 'AskTeamSelection', 1 );
             dojo.subscribe( 'selectedExplorers', this, "notif_selectedExplorers" );
+            this.notifqueue.setSynchronous( 'selectedExplorers', 1 );
             dojo.subscribe( 'updateHand', this, "notif_updateHand" );
+            this.notifqueue.setSynchronous( 'updateHand', 1 );
             dojo.subscribe( 'updateTileAvail', this, "notif_updateTileAvail" );
+            this.notifqueue.setSynchronous( 'updateTileAvail', 1 );
             dojo.subscribe( 'cardsOnShip', this, "notif_cardsOnShip" );
             this.notifqueue.setSynchronous( 'cardsOnShip', 500 );
+            dojo.subscribe( 'ReplayTileSelected', this, "notif_ReplayTileSelected" );
+            this.notifqueue.setSynchronous( 'ReplayTileSelected', 1 );
             dojo.subscribe( 'SelectedTile', this, "notif_SelectedTile" );
+            this.notifqueue.setSynchronous( 'SelectedTile', 1 );
             dojo.subscribe( 'muted_monster', this, "notif_muted_monster" );
+            this.notifqueue.setSynchronous( 'muted_monster', 1 );
             dojo.subscribe( 'playedTiles', this, "notif_playedTiles" );
+            this.notifqueue.setSynchronous( 'playedTiles', 1 );
             dojo.subscribe( 'ZombiePlayedTile', this, "notif_ZombiePlayedTile" );
+            this.notifqueue.setSynchronous( 'ZombiePlayedTile', 1 );
             dojo.subscribe( 'wonMedal', this, "notif_wonMedal" );
             this.notifqueue.setSynchronous( 'wonMedal', 100 );
             dojo.subscribe( 'scoreUpdate', this, "notif_scoreUpdate" );
+            this.notifqueue.setSynchronous( 'scoreUpdate', 1 );
             dojo.subscribe( 'endGame_scoring', this, "notif_endGame_scoring" );
             let num_players = Object.keys(gameui.gamedatas.players).length;
             this.notifqueue.setSynchronous( 'endGame_scoring', 5000 * num_players + 3000 );
@@ -2337,6 +2277,8 @@ function (dojo, declare) {
 
         notif_cardsOnShip : function (notif)
         {
+            debug('notif_cardsOnShip');
+            debug(notif);
             var s = notif.args
             if (this.player_id == s.player_id) {
                 // process if we are the player that made the action
@@ -2353,36 +2295,24 @@ function (dojo, declare) {
                         
                         dojo.addClass("myhand_item_" + element['id'], "bm_tileClass")
                         dojo.addClass("myhand_item_" + element['id'], "bm_backtilestock")
-                        
-                       // add style component to prepare for flip animation
-                      /*  dojo.style('myhand_item_'+tile_id, 'margin', '0px');
-                       dojo.style('myhand_item_'+tile_id, 'backface-visibility', 'hidden');
-                       // add the top/left position to back tile according to the original tile
-                       (dojo.style('myhand_item_'+tile_id, 'top') == 0) ? dojo.style('stockitem_wrap_'+tile_id, 'top', '0px') : dojo.style('stockitem_wrap_'+tile_id, 'top', '110px');
-                       dojo.style('stockitem_wrap_'+tile_id, 'left', dojo.style('myhand_item_'+tile_id, 'left')+'px');
-                       dojo.style('myhand_item_'+tile_id, 'top', '0px');
-                       dojo.style('myhand_item_'+tile_id, 'left', '0px');
-                       dojo.addClass('stockitem_wrap_'+tile_id, "flipped"); */
-                       //await sleep(10000);
-                       //setTimeout(() => {
-                            if (!this.lastTurn) {
-                                // move card to ship
-                                var anim = this.slideToObject( "myhand_item_" + tile_id, "ship_" + s.player_ship_id);
-                                if (first_card) {
-                                    debug('first card')
-                                    dojo.connect(anim, 'onEnd', dojo.hitch(this, 'cardOnShipAnimEnded', s.player_ship_id, s.turn));
-                                    first_card = false;
-                                }
-                                anim.play();
-                                //this.playerHand.removeFromStockById( tile_id );
-                            } else {
-                                // don't move the card (will be destroyed when removed from stock)
+
+                        if (!this.lastTurn) {
+                            // move card to ship
+                            var anim = this.slideToObject( "myhand_item_" + tile_id, "ship_" + s.player_ship_id);
+                            if (first_card) {
+                                debug('first card')
+                                dojo.connect(anim, 'onEnd', dojo.hitch(this, 'cardOnShipAnimEnded', s.player_ship_id, s.turn));
+                                first_card = false;
                             }
-                            // remove moved cards from player's hand
-                            this.playerHand.removeFromStockById( tile_id );
-                            //dojo.destroy('stockitem_wrap_'+tile_id);
-                            // unselect remaining cards on hand
-                            this.playerHand.unselectAll();
+                            anim.play();
+                            //this.playerHand.removeFromStockById( tile_id );
+                        } else {
+                            // don't move the card (will be destroyed when removed from stock)
+                        }
+                        // remove moved cards from player's hand
+                        this.playerHand.removeFromStockById( tile_id );
+                        // unselect remaining cards on hand
+                        this.playerHand.unselectAll();
                         //}, 1000);
                         // change the clickable mouse aspect on ship tiles
                         this.desactivateShips();
@@ -2400,18 +2330,20 @@ function (dojo, declare) {
                 this.busyShips.push(toint(s.player_ship_id));
                 // add back the buttons on the top bar
             }
-            var items = this.playerHand.getSelectedItems();
-            if (items.length > 0) {
-                // the player has card selected when notif is received
-                this.desactivateShips();
-                if (this.lastTurn) {
-                    if ($('SelConfbutton') == null) {
-                        this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile','customActions' );
+            if (!this.isSpectator) {
+                var items = this.playerHand.getSelectedItems();
+                if (items.length > 0) {
+                    // the player has card selected when notif is received
+                    this.desactivateShips();
+                    if (this.lastTurn) {
+                        if ($('SelConfbutton') == null) {
+                            this.addActionButton( 'SelConfbutton', _('Select Tile'), 'onClickSelectLastTile','customActions' );
+                        } else {
+                            dojo.removeClass( 'SelConfbutton', 'disabled');
+                        }
                     } else {
-                        dojo.removeClass( 'SelConfbutton', 'disabled');
+                        setTimeout(this.activateShips(),5000);
                     }
-                } else {
-                    setTimeout(this.activateShips(),5000);
                 }
             }
 
@@ -2420,12 +2352,16 @@ function (dojo, declare) {
 
         notif_ReplayTileSelected : function (notif) {
             var s = notif.args
-            if (isReadOnly()) {
+            debug('replay tile selected')
+            debug(notif)
+            if (this.isReadOnly()) {
                 this.playerHand.selectItem( s.card_id );
             }
         },
 
         notif_SelectedTile : function (notif) {
+            debug('notif_SelectedTile')
+            debug(notif)
             s = notif.args;
             if (s.row == 'upper') {
                 var tilerow = this.upper_row;
@@ -2435,6 +2371,7 @@ function (dojo, declare) {
                 this.active_row = 2; 
             }
             if (toint(s.action) == 0) {
+                debug('in s.action == 0')
                 // card selected to be played
                 dojo.addClass(s.row + '_row_item_' + s.card_id , 'selected');
                 this.selected_tile_id = toint(s.card_id);
@@ -2443,11 +2380,13 @@ function (dojo, declare) {
                 this.tile_selected = false;
                 this.changePageTitle("discard");
             } else if (toint(s.action) == 1) {
+                debug('in s.action == 1')
                 // card selected for discard
                 tilerow.removeFromStockById( s.card_id );
                 tilerow.unselectAll();
                 this.tile_selected = false;
             } else if (toint(s.action) == 3) {
+                debug('in s.action == 3')
                 // card selected to play and remaining to discard
                 dojo.addClass(s.row + '_row_item_' + s.card_id , 'selected');
                 this.selected_tile_id = toint(s.card_id);
@@ -2459,10 +2398,12 @@ function (dojo, declare) {
             }
             // disable tiles of other row
             if (s.row == 'upper' ) {
+                debug('disabling lower row')
                 var id_list = this.lower_row.getAllItems();
                 var rowname = "lower_row";
                 this.lower_row.setSelectionMode( 0 )
             } else {
+                debug('disabling upper row')
                 var id_list = this.upper_row.getAllItems();
                 var rowname = "upper_row";
                 this.upper_row.setSelectionMode( 0 )
@@ -2505,6 +2446,8 @@ function (dojo, declare) {
 
         notif_playedTiles : function (notif)
         {
+            debug('notif_playedTiles');
+            debug(notif);
             var s = notif.args
             // skip when it's the player's board
             if (this.player_id != s.player_id || g_archive_mode || typeof g_replayFrom != 'undefined') {
@@ -2517,7 +2460,7 @@ function (dojo, declare) {
                 // create a phantom block to move the tile to
                 phantomId = 'phantomplace_'+s.x+'*'+s.y;
                 var html = '<div id="'+phantomId+'" class="phantomplace" style="'+
-                    'top:'+(s.y*this.SCALE/2)+'px; left:'+(x*this.SCALE*2)+'px; width:50px; height:50px; position:absolute'+
+                    'top:'+(y*this.SCALE/2)+'px; left:'+(x*this.SCALE*2)+'px; width:50px; height:50px; position:absolute'+
                     '"></div>';
                 debug('created the html snippet : '+html);
                 this.boards[s.player_id].addHtml(html,0);
@@ -2532,8 +2475,8 @@ function (dojo, declare) {
                 } else {
                     let tmptileDiv = this.format_block('jstpl_tmp_tile', {
                         tile_id : s.card_id,
-                        back_x: toint(kind_monster)*100,
-                        back_y: toint(type)*100,
+                        back_x: (toint(kind_monster)-1)*100,
+                        back_y: (toint(type)-1)*100,
                         rot: rot
                     });
                     dojo.place( tmptileDiv, "overall_player_board_"+s.player_id, "first" );
@@ -2561,6 +2504,11 @@ function (dojo, declare) {
                 } else {
                     this.playerHand.removeFromStockById( s.card_id );
                 }
+            }
+            if (this.isSpectator && document.querySelector('*[id^="tileOnShip_"]') ) {
+                Object.keys(this.gamedatas.players).forEach(
+                    o=>this.slideToObjectAndDestroy( document.querySelector('*[id^="tileOnShip_'+o+'"]')  , "overall_player_board_" + o, 1000, 0 )
+                    );
             }
             this.onScreenWidthChange(); // reset view of all play zone (center them)
         },
@@ -2615,8 +2563,5 @@ function (dojo, declare) {
                 this.scoreCtrl[ s.player_id ].incValue( s.score_delta );
             }
         },
-
-
-
    });             
 });
