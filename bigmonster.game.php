@@ -2588,7 +2588,7 @@ class BigMonster extends Table
                     }
                     if (
                         (in_array([$value[0] - 1, $value[1]], $avail_place) and in_array([$value[0] , $value[1] + 1], $avail_place) and in_array([$value[0] - 1, $value[1]+1], $used_place)) //TR (free on left and free on bottom and busy on bottom-left)
-                        or (in_array([$value[0] - 1, $value[1]], $avail_place) and in_array([$value[0] , $value[1] - 1], $avail_place) and in_array([$value[0] - 1, $value[1]-1], $used_place)) //BR (free on left and free on top and busy on top-left)
+                        or (in_array([$value[0] - 1, $value[1]], $avail_place) and in_array([$value[0] , $value[1] - 1], $avail_place) and in_array([$value[0] - 1, $value[1]-1], $used_place) and !in_array([$value[0] + 1, $value[1]-1], $used_place)) //BR (free on left and free on top and busy on top-left and nothing on top-right)
                         or (in_array([$value[0] - 1, $value[1]], $used_place) and in_array([$value[0] + 1, $value[1]], $used_place)) // between 2 tiles
                         or (in_array([$value[0] + 1, $value[1]], $used_place) and in_array([$value[0] - 1, $value[1]], $avail_place) and !(in_array([$value[0] - 2, $value[1]], $avail_place) and in_array([$value[0]-1 , $value[1] + 1], $avail_place))) // used on right, free on left (but the left not flagged as TR)
                         ) {
