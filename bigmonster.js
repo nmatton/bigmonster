@@ -1127,7 +1127,7 @@ function (dojo, declare) {
         },
         
         setTileToolTip: function(id, type, kind_monster, location='myhand') {
-            debug('add tooltip to '+id+' with type : '+type+' and kind : '+kind_monster);
+            debug('add tooltip to '+id+' with type : '+type+' and kind : '+kind_monster+ ' on location :  ' + location);
             if ( [3,5,7].includes(toint(type)) ) {
                 var monster_name = this.gamedatas.help_monsters[toint(type)]['name'];
                 var monster_descr = this.gamedatas.help_monsters[toint(type)]['descr'];
@@ -2073,6 +2073,7 @@ function (dojo, declare) {
         },  
 
         notif_AskTeamSelection : function (notif) {  // should be removed ?
+            debug('notif_AskTeamSelection');
             debug(notif)
             debug('SELECT TEAM PLEASE !!');
         },
@@ -2109,6 +2110,8 @@ function (dojo, declare) {
            },
          
          notif_finalRound: function( notif ) {
+            debug('notif_finalRound');
+            debug(notif);
             let playerId = notif.args.player_id;
             
             this.gamedatas.game_ending_player = playerId;
@@ -2117,6 +2120,7 @@ function (dojo, declare) {
          
          notif_endGame_scoring: function ( notif )
          {
+            debug('notif_endGame_scoring');
             debug(notif);
             let breakdowns = notif.args.breakdowns;
             let winnerIds = notif.args.winner_ids;
@@ -2196,6 +2200,8 @@ function (dojo, declare) {
 
         notif_selectedExplorers : function (notif)
         {
+            debug('notif_selectedExplorers');
+            debug(notif);
             var s = notif.args
             this.explorers[s.player_id] = {'player_id': s.player_id, 'explorer_id': s.explorer_id}
             if (s.player_id == this.player_id) {
@@ -2214,6 +2220,8 @@ function (dojo, declare) {
 
         notif_updateHand : function (notif)
         {
+            debug('notif_updateHand');
+            debug(notif);
             var s = notif.args;
             var cards = s.cards;
             var delay = 10;
@@ -2243,7 +2251,10 @@ function (dojo, declare) {
             if (this.hide_tiles) dojo.query('.stockitem').addClass('bm_stock_invisible'); // hide tile if countdown is running
         },
 
-        notif_updateTileAvail : function (notif) {
+        notif_updateTileAvail : function (notif)
+        {
+            debug('notif_updateTileAvail');
+            debug(notif);
             var s = notif.args;
             var cards = s.cards;
             if (toint(s.updated_row) > 0) {
@@ -2265,7 +2276,7 @@ function (dojo, declare) {
                         var type = card.type;
                         var kind_monster = card.type_arg;
                         tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                        this.setTileToolTip(card.id, type, kind_monster, loc_cards+'_row');
+                        this.setTileToolTip(card.id, type, kind_monster, loc+'_row');
                     }
                 }
                 // update the number of cards remaing (extra from new turn since 2 rows are updated here)
@@ -2351,6 +2362,8 @@ function (dojo, declare) {
         },
 
         notif_ReplayTileSelected : function (notif) {
+            debug('notif_ReplayTileSelected');
+            debug(notif)
             var s = notif.args
             debug('replay tile selected')
             debug(notif)
@@ -2415,6 +2428,8 @@ function (dojo, declare) {
 
         notif_muted_monster : function (notif)
         {
+            debug('notif_muted_monster');
+            debug(notif);
             var s = notif.args
             if (notif.bIsTableMsg) {
                 // public notification
@@ -2519,6 +2534,8 @@ function (dojo, declare) {
         },
 
         notif_wonMedal : function (notif) {
+            debug('notif_wonMedal');
+            debug(notif)
             var s = notif.args;
             var delay = 10;
             var duration = 3000;
