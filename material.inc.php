@@ -114,7 +114,7 @@ $this->monster_infos = array(
                                 1 => 7,
                                 2 => 20),
                 'name' => clienttranslate('Orange ice monster'),
-                'descr' => clienttranslate('This monster worth 2 points but can evovle to muted form two times by placing mutagenic monster above and below (1st mutation : 7 points, 2nd : 20 points)')
+                'descr' => clienttranslate('This monster worth 2 points but can evolve to mutated form two times by placing mutagenic monster above and below (1st mutation: 7 points, 2nd: 20 points)')
                 ),
     3 => array( 'possible_mutations' => 2,  
                 'pts' => array(
@@ -122,7 +122,7 @@ $this->monster_infos = array(
                                 1 => 8,
                                 2 => 18),
                 'name' => clienttranslate('Green ice monster'),
-                'descr' => clienttranslate('This monster worth 3 points but can evovle to muted form two times by placing mutagenic monster above and below (1st mutation : 8 points, 2nd : 18 points)')
+                'descr' => clienttranslate('This monster worth 3 points but can evolve to mutated form two times by placing mutagenic monster above and below (1st mutation: 8 points, 2nd: 18 points)')
                 ),
     4 => array( 'possible_mutations' => 2,  
                 'pts' => array(
@@ -130,7 +130,7 @@ $this->monster_infos = array(
                                 1 => 9,
                                 2 => 15),
                 'name' => clienttranslate('Red ice monster'),
-                'descr' => clienttranslate('This monster worth 4 points but can evovle to muted form two times by placing mutagenic monster above and below (1st mutation : 9 points, 2nd :1(5 points).)')
+                'descr' => clienttranslate('This monster worth 4 points but can evolve to mutated form two times by placing mutagenic monster above and below (1st mutation: 9 points, 2nd: 15 points).)')
                 )
                 ),
   2 => array( 'pts' => 0,
