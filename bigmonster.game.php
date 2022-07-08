@@ -451,7 +451,7 @@ class BigMonster extends Table
 		}
 	}
 
-      /*
+  /*
    * loadBug: in studio, type loadBug(20762) into the table chat to load a bug report from production
    * client side JavaScript will fetch each URL below in sequence, then refresh the page
    */
@@ -477,33 +477,36 @@ class BigMonster extends Table
       ]
     ]);
   }
-
+  
   /*
    * loadBugSQL: in studio, this is one of the URLs triggered by loadBug() above
    */
   public function loadBugSQL($reportId)
   {
     $studioPlayer = self::getCurrentPlayerId();
-    $players = $this->playerManager->getPlayers();
-
+    $players = self::getObjectListFromDb("SELECT player_id FROM player", true);
+  
     // Change for your game
     // We are setting the current state to match the start of a player's turn if it's already game over
     $sql = [
-      "UPDATE global SET global_value=" . ST_MOVE . " WHERE global_id=1 AND global_value=" . ST_BGA_GAME_END
+      "UPDATE global SET global_value=2 WHERE global_id=1 AND global_value=99"
     ];
-    foreach ($players as $player) {
-      $pId = $player->getId();
-      // All game can keep this SQL
+    foreach ($players as $pId) {
+      // All games can keep this SQL
       $sql[] = "UPDATE player SET player_id=$studioPlayer WHERE player_id=$pId";
       $sql[] = "UPDATE global SET global_value=$studioPlayer WHERE global_value=$pId";
       $sql[] = "UPDATE stats SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
-
-      // Change the below SQL to update the specific tables for your game
+      $sql[] = "UPDATE gamelog SET gamelog_player=$studioPlayer WHERE gamelog_player=$pId";
+      $sql[] = "UPDATE gamelog SET gamelog_current_player=$studioPlayer WHERE gamelog_current_player=$pId";
+      $sql[] = "UPDATE gamelog SET gamelog_notification=REPLACE(gamelog_notification, $pId, $studioPlayer)";
+  
+      // TODO Add game-specific SQL updates for the tables, everywhere players ids are used in your game 
+      $sql[] = "UPDATE player SET cardsonshiporigin=$studioPlayer WHERE cardsonshiporigin=$pId";
       $sql[] = "UPDATE card SET card_location_arg=$studioPlayer WHERE card_location_arg=$pId";
-      $sql[] = "UPDATE piece SET player_id=$studioPlayer WHERE player_id=$pId";
-      $sql[] = "UPDATE log SET player_id=$studioPlayer WHERE player_id=$pId";
-      $sql[] = "UPDATE log SET action_arg=REPLACE(action_arg, $pId, $studioPlayer)";
-
+      $sql[] = "UPDATE explorers SET player_id=$studioPlayer WHERE player_id=$pId";
+      $sql[] = "UPDATE gamelog SET gamelog_player=$studioPlayer WHERE gamelog_player=$pId";
+      $sql[] = "UPDATE medals SET player_id=$studioPlayer WHERE player_id=$pId";
+  
       // This could be improved, it assumes you had sequential studio accounts before loading
       // e.g., quietmint0, quietmint1, quietmint2, etc. are at the table
       $studioPlayer++;
@@ -511,11 +514,12 @@ class BigMonster extends Table
     $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
     self::warn($msg);
     self::notifyAllPlayers('message', $msg, []);
-
+  
     foreach ($sql as $q) {
       self::DbQuery($q);
     }
     self::reloadPlayersBasicInfos();
+    $this->gamestate->reloadState();
   }
 
   

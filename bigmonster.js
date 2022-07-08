@@ -13,9 +13,11 @@
  * 
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
- */
- var isDebug = window.location.host == 'studio.boardgamearena.com' || window.location.hash.indexOf('debug') > -1; // add '#debug' to end of url on prod to enable debug logging
- var debug = isDebug ? console.info.bind(window.console) : function () {};
+*/
+var isDebug = window.location.host == 'studio.boardgamearena.com' || window.location.hash.indexOf('debug') > -1; // add '#debug' to end of url on prod to enable debug logging
+var debug = isDebug ? console.info.bind(window.console) : function () {};
+// Load production bug report handler
+
 
 define([
     "dojo","dojo/_base/declare",
@@ -926,28 +928,7 @@ function (dojo, declare) {
             script.
         
         */
-            notif_loadBug: function (n) {
-                function fetchNextUrl() {
-                  var url = n.args.urls.shift();
-                  debug('Fetching URL', url);
-                  dojo.xhrGet({
-                    url: url,
-                    load: function (success) {
-                      // This could be improved, I don't check the response for errors
-                      debug('Success for URL', url, success);
-                      if (n.args.urls.length > 0) {
-                        fetchNextUrl();
-                      } else {
-                        debug('Done, reloading page');
-                        window.location.reload();
-                      }
-                    }
-                  });
-                }
-            
-                debug('Notif: load bug', n.args);
-                fetchNextUrl();
-              },
+
         /* 
         * Manage open and closing ship area
         */
@@ -2043,6 +2024,44 @@ function (dojo, declare) {
         setupNotifications: function()
         {
             
+            self = this
+            dojo.subscribe("loadBug", this, function loadBug(n) {
+                function fetchNextUrl() {
+                    var url = n.args.urls.shift();
+                    console.log("Fetching URL", url, "...");
+                    // all the calls have to be made with ajaxcall in order to add the csrf token, otherwise you'll get "Invalid session information for this action. Please try reloading the page or logging in again"
+                    self.ajaxcall(url,{lock: true},
+                        self,
+                        function (success) {
+                            console.log("=> Success ", success);
+                            if (n.args.urls.length > 1) {
+                                fetchNextUrl();
+                            }
+                            else if (n.args.urls.length > 0) {
+                                //except the last one, clearing php cache
+                                url = n.args.urls.shift();
+                                dojo.xhrGet({
+                                    url: url,
+                                    load: function (success) {
+                                    console.log("Success for URL", url, success);
+                                    console.log("Done, reloading page");
+                                    window.location.reload();
+                                    },
+                                    handleAs: "text",
+                                    error: function (error) {
+                                    console.log("Error while loading : ", error);
+                                    }
+                                });
+                            }
+                        },
+                        function (error) {
+                            if (error) console.log("=> Error ", error);
+                        }
+                    );
+                }
+                console.log("Notif: load bug", n.args);
+                fetchNextUrl();
+             });
             dojo.subscribe( 'AskTeamSelection', this, "notif_AskTeamSelection" );  // should be removed ?
             this.notifqueue.setSynchronous( 'AskTeamSelection', 1 );  // should be removed ?
             dojo.subscribe( 'selectedExplorers', this, "notif_selectedExplorers" );
@@ -2071,6 +2090,8 @@ function (dojo, declare) {
             let num_players = Object.keys(gameui.gamedatas.players).length;
             this.notifqueue.setSynchronous( 'endGame_scoring', 5000 * num_players + 3000 );
         },  
+
+        
 
         notif_AskTeamSelection : function (notif) {  // should be removed ?
             debug('notif_AskTeamSelection');
