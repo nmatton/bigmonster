@@ -1375,12 +1375,17 @@ class BigMonster extends Table
                     $total_count = 999;
                     $users_counts = array();
                     foreach (array_keys($this->loadPlayersBasicInfos()) as $pid) {
+                        if ($printres) var_dump($pid);
                         $rune_monster = $this->custgetCardsOfTypeInLocation(8,null,'board',$pid);
                         $rune_count = $this->getrunecount($rune_monster);
-                        $nbr_desert_tiles = count($this->custgetCardsOfTypeInLocation(7,null,'board',$pid));
+                        if ($printres) var_dump($rune_count);
+                        $nbr_desert_tiles = $this->checkMedalSuccess(3, $pid, false, 0, true);
+                        if ($printres) var_dump($nbr_desert_tiles);
                         $user_count = intval($rune_count) + intval($nbr_desert_tiles);
+                        if ($printres) var_dump($user_count);
                         $users_counts[$pid] = $user_count;
                     }
+                    if ($printres) var_dump($users_counts);
                     $user_medal_owner = array_values(array_keys($users_counts,min($users_counts)));
                     return $user_medal_owner;
                 }
