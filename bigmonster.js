@@ -14,7 +14,7 @@
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
  */
- var isDebug = window.location.host == 'studio.boardgamearena.com' || window.location.hash.indexOf('debug') > -1;
+ var isDebug = window.location.host == 'studio.boardgamearena.com' || window.location.hash.indexOf('debug') > -1; // add '#debug' to end of url on prod to enable debug logging
  var debug = isDebug ? console.info.bind(window.console) : function () {};
 
 define([
@@ -2043,8 +2043,8 @@ function (dojo, declare) {
         setupNotifications: function()
         {
             
-            dojo.subscribe( 'AskTeamSelection', this, "notif_AskTeamSelection" );
-            this.notifqueue.setSynchronous( 'AskTeamSelection', 1 );
+            dojo.subscribe( 'AskTeamSelection', this, "notif_AskTeamSelection" );  // should be removed ?
+            this.notifqueue.setSynchronous( 'AskTeamSelection', 1 );  // should be removed ?
             dojo.subscribe( 'selectedExplorers', this, "notif_selectedExplorers" );
             this.notifqueue.setSynchronous( 'selectedExplorers', 1 );
             dojo.subscribe( 'updateHand', this, "notif_updateHand" );
@@ -2072,7 +2072,7 @@ function (dojo, declare) {
             this.notifqueue.setSynchronous( 'endGame_scoring', 5000 * num_players + 3000 );
         },  
 
-        notif_AskTeamSelection : function (notif) {
+        notif_AskTeamSelection : function (notif) {  // should be removed ?
             debug(notif)
             debug('SELECT TEAM PLEASE !!');
         },

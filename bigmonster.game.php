@@ -2649,7 +2649,7 @@ class BigMonster extends Table
                 //throw new BgaUserException( self::_("Team play mode can be played at 4 or 6 players, not 5 !") );
                 $this->gamestate->nextState( 'pregameEnd' );
             } else {
-                self::NotifyAllPlayers("AskTeamSelection", '', array());
+                self::NotifyAllPlayers("AskTeamSelection", '', array()); // should be removed ?
                 $this->gamestate->setAllPlayersMultiactive();
             }
         } else {
@@ -3114,8 +3114,6 @@ class BigMonster extends Table
             self::DbQuery( "UPDATE player SET player_score_aux = ".$score['bigmonster']." WHERE player_id='".$player_id."'" );
         }
         
-        // get array of winners ids
-        $winner_id = array_keys(self::getNonEmptyCollectionFromDB( "SELECT sq1.player_id FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq1 WHERE sq1.player_score_aux = (SELECT max(sq2.player_score_aux) FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq2)" ));
         
         // compute team score if teamode is enabled
         if ($this->isTeamPlay()) {
@@ -3228,12 +3226,6 @@ class BigMonster extends Table
             }
 
         }
-        $notif_data = array(
-            "breakdowns" => $breakdowns,
-            "winner_ids" => $winner_id,
-            "team_scores" => $team_scores,
-            "winning_team" => $winning_team
-        );
         // send notif of end scores
         // update score of BGA framework
         foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
@@ -3262,6 +3254,15 @@ class BigMonster extends Table
             }
         }
         // send notif for the final score animation
+        // get array of winners ids
+        $winner_id = array_keys(self::getNonEmptyCollectionFromDB( "SELECT sq1.player_id FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq1 WHERE sq1.player_score_aux = (SELECT max(sq2.player_score_aux) FROM (SELECT player_id, player_score_aux  FROM `player` WHERE player_score = (SELECT max(player_score) FROM player)) as sq2)" ));
+
+        $notif_data = array(
+            "breakdowns" => $breakdowns,
+            "winner_ids" => $winner_id,
+            "team_scores" => $team_scores,
+            "winning_team" => $winning_team
+        );
         self::NotifyAllPlayers("endGame_scoring", '', $notif_data);
         $this->gamestate->nextState( 'gameEnd' );
 
