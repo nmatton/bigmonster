@@ -2260,6 +2260,7 @@ function (dojo, declare) {
             if (toint(s.updated_row) > 0) {
                 var tilerow = (toint(s.updated_row) == 1) ? this.upper_row : this.lower_row;
                 var rowname = (toint(s.updated_row) == 1) ? 'upper_row' : 'lower_row';
+                tilerow.removeAll()
                 for (var i in cards) {
                     var card = cards[i];
                     var type = card.type;
@@ -2271,6 +2272,7 @@ function (dojo, declare) {
                 for (var loc of ['upper', 'lower']) {
                     loc_cards = cards[loc];
                     var tilerow = (loc == 'upper') ? this.upper_row : this.lower_row;
+                    tilerow.removeAll()
                     for (var i in loc_cards) {
                         var card = loc_cards[i];
                         var type = card.type;
@@ -2487,6 +2489,8 @@ function (dojo, declare) {
                     clone_tile.id = 'clone_'+tileId;
                     tileId = 'clone_'+tileId;
                     dojo.place(clone_tile,rowname); //upper_row_item_97
+                    let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
+                    tilerow.removeFromStockById( s.card_id );
                 } else {
                     let tmptileDiv = this.format_block('jstpl_tmp_tile', {
                         tile_id : s.card_id,
