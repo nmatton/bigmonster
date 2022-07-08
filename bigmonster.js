@@ -343,12 +343,15 @@ function (dojo, declare) {
                     var row = card.location_arg;
                     var type = card.type;
                     var kind_monster = card.type_arg;
+                    let tileoptionsDiv = this.format_block('jstpl_card_menu', {tile_id : card.id});
                     if (toint(row) == 1) {
                         this.upper_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
-                        this.setTileToolTip(card.id, type, kind_monster, 'upper_row');
+                        this.setTileToolTip(card.id, type, kind_monster, 'upper_row'); // add tooltip
+                        dojo.place(tileoptionsDiv, "upper_row_item_"+card.id, "first") // add menu options
                     } else if (toint(row) == 2) {
                         this.lower_row.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
                         this.setTileToolTip(card.id, type, kind_monster, 'lower_row');
+                        dojo.place(tileoptionsDiv, "lower_row_item_"+card.id, "first") // add menu options
                     } else {
                         // row is equal to player ID => selected card
                         if (toint(this.active_row) == 1) {
@@ -362,6 +365,7 @@ function (dojo, declare) {
                         dojo.addClass(rowname + '_item_'+card.id , 'selected');
                         dojo.addClass(rowname + '_item_'+card.id , 'disabled');
                         this.setTileToolTip(card.id, type, kind_monster, rowname);
+                        dojo.place(tileoptionsDiv, rowname+"_item_"+card.id, "first") // add menu options
                         this.selected_tile_id = toint(card.id);
                         this.changePageTitle('discard');
                         this.selected_tile_type = card.type;

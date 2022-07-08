@@ -215,6 +215,66 @@ padding-left: 4px;
     border-color : transparent transparent transparent transparent;
 }
 
+/* card action selection (2-3 p variant) */
+
+.bm_cardplay {
+    font-size: 2.1em;
+    color: #565856;
+    position: absolute;
+    top: 12px;
+    left: 13px;
+    cursor: pointer;
+}
+
+.bm_carddiscard {
+    font-size: 2.1em;
+    color: #565856;
+    position: absolute;
+    top: 55px;
+    left: 14px;
+    cursor: pointer;
+}
+
+.bm_cardplay:hover {
+    color: #229f13;
+}
+
+.bm_carddiscard:hover {
+    color: #9f1313;
+}
+
+.bm_cardplay.bm_cardactionselected {
+    text-shadow: 0px 0px 9px #00ff28;
+}
+
+.bm_carddiscard.bm_cardactionselected {
+    text-shadow: 0px 0px 9px #e71010;
+}
+
+.stockitem:hover > div.cardmenu {
+    display: block;
+}
+
+.cardmenu {
+    position: absolute;
+    font-size: 80%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+.cardmenuback {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    position: absolute;
+    opacity: .5;
+}
+
 /** This is some extra stuff to extend the container **/
 
 #map_footer {
