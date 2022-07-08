@@ -1639,6 +1639,7 @@ class BigMonster extends Table
         $blue_count = 0;
         $explo_diamonds = $this->explorer_infos[$this->getExplorer()[$player_id]['explorer_id']]['diamonds'];
         $explo_has_topleft = false;
+        $explo_has_topright = false;
         $explo_has_left = false;
         $explo_has_top = false;
         $monster_with_diams = array(4,8);
@@ -1711,7 +1712,7 @@ class BigMonster extends Table
                                         // card is placed on the top side of our "main" card and has a blue diamond on its bottom left corner
                                         $has_top = true;
                                     }
-                                    if (intval($card_details['board_x']) - 1 === intval($card_details2['board_x']) and intval($card_details['board_y']) === intval($card_details2['board_y']) and in_array('BTR', $diamonds2) or (in_array('BTR', $explo_diamonds) and intval($card_details['board_x']) === -1 and intval($card_details['board_y']) === 2)) {
+                                    if (intval($card_details['board_x']) - 1 === intval($card_details2['board_x']) and intval($card_details['board_y']) === intval($card_details2['board_y']) and in_array('BTR', $diamonds2) or (in_array('BTR', $explo_diamonds) and intval($card_details['board_x']) === 2 and intval($card_details['board_y']) === 0)) {
                                         // card is placed on the left side of our "main" card and has a diamond on its right side
                                         $has_left = true;
                                     }
