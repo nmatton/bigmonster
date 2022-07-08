@@ -1301,6 +1301,7 @@ class BigMonster extends Table
 
     protected function checkMedalSuccess($medal_id, $player_id=null, $printres=false, $teamid=-1, $get_details=false)
     {
+        $this->updateLocalDB('card');
         switch (intval($medal_id)) {
             case 3:
                 // indiv : 3 desert tiles - team : 6 desert tiles
