@@ -216,6 +216,9 @@ padding-left: 4px;
 }
 
 /* card action selection (2-3 p variant) */
+.cardmenu.show{
+    display: block;
+}
 
 .bm_cardplay {
     font-size: 2.1em;
@@ -239,7 +242,15 @@ padding-left: 4px;
     color: #229f13;
 }
 
+.bm_cardplay.active {
+    color: #229f13;
+}
+
 .bm_carddiscard:hover {
+    color: #9f1313;
+}
+
+.bm_carddiscard.active {
     color: #9f1313;
 }
 
@@ -272,7 +283,7 @@ padding-left: 4px;
     height: 100%;
     background-color: #fff;
     position: absolute;
-    opacity: .5;
+    opacity: .35;
 }
 
 /** This is some extra stuff to extend the container **/
