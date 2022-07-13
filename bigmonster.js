@@ -100,7 +100,7 @@ function (dojo, declare) {
             centerscroll = false;
             if (!this.isTeamPlay) {
                 // individual game setup
-                for (var t of  Object.keys(gamedatas.players)) {
+                for (var t of Object.keys(gamedatas.players)) {
                     this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
                 }
                 if (this.isSpectator) {
@@ -225,8 +225,7 @@ function (dojo, declare) {
                 this.setTeamsScoringBoard();
             } else if (!this.isTeamPlay) {
                 // setup score board for indivudual play
-                for( var player_id in gamedatas.players )
-                {
+                for (var player_id of  Object.keys(gamedatas.players)) {
                     var player = gamedatas.players[player_id];
                     // Set up scoring table in advance (helpful for testing!)
                     let splitPlayerName = '';
@@ -1406,10 +1405,10 @@ function (dojo, declare) {
         desactivateShips : function() {
             this.removeActionButtons();
             dojo.empty('customActions');
-            for (var t of this.gamedatas.playerorder) {
+            Object.values(this.gamedatas.playerorder).forEach(t => {
                 dojo.removeClass("ship_" + t,"bm_selectable");
                 dojo.removeClass('tile_e_' + this.explorers[t]['explorer_id'], 'bm_selectable');
-            }
+            });
         },
 
         convert_coord : function(in_x, in_y ,type) {
@@ -2360,11 +2359,11 @@ function (dojo, declare) {
                         currentTime += 500;
                     }
                 } else {
-                    for( let player_id in this.gamedatas.players ) {
+                    Object.keys(this.gameui.gamedatas.players).forEach((player_id) => {
                         setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
                         this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
                         currentTime += 500;
-                     }
+                     });
                 }
             }
             if (this.isTeamPlay) {
