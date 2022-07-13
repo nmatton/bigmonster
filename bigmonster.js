@@ -525,9 +525,8 @@ function (dojo, declare) {
                 dojo.query("div#ship_" + Object.keys(gamedatas.players)[o]).connect("onclick", this, "onClickShipTile")
             }
             // ** add listeners on expand/reduce ship area ** //
-             dojo.connect( $('reduce_ships'), 'onclick', this, 'onClickCloseShipArea' );
+            dojo.connect( $('reduce_ships'), 'onclick', this, 'onClickCloseShipArea' );
             dojo.connect( $('expand_ships'), 'onclick', this, 'onClickOpenShipArea' );
-
             
             // ** set the selectable status of ships ** //
             var turn_n = Math.ceil(toint(gamedatas.gamestate.updateGameProgression) * 17/100) - 1;
@@ -767,6 +766,9 @@ function (dojo, declare) {
                 dojo.query(".possibleMoveH").forEach(function(node, index, nodelist){
                     dojo.destroy(node);
                 });
+                if (this.isSpectator || !this.isCurrentPlayerActive()) {
+                    dojo.query('.stockitem').addClass('bm_unselectable')
+                }
                 break;
             case 'placeTile':
                 if (!this.isSpectator){
@@ -841,6 +843,12 @@ function (dojo, declare) {
                     // connect click event
                     dojo.query('.possibleMoveV').connect('onclick', this, 'onClickPossibleMove');
                     dojo.query('.possibleMoveH').connect('onclick', this, 'onClickPossibleMove');
+                    let card_id = document.querySelector('.cardmenu.show')?.dataset?.id
+                    if (this.concurentselect && card_id) {
+                        // reorganise selection buttons
+                        dojo.query('#play_'+card_id).addClass('bm_singleselect')
+                        dojo.query('#discard_'+card_id).addClass('bm_stock_hide')
+                    }
                 }
                 break;
             case 'var_endTurn':
