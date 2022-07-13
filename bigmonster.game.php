@@ -2303,7 +2303,7 @@ class BigMonster extends Table
 
     }
 
-    function var_selectTile($rem_cards_str, $sel_card, $source_row, $sel_action)
+    function var_selectTile($rem_cards_str, $sel_card, $source_row, $sel_action, $sel_discard=null)
     {
         self::checkAction( 'var_SelectTile' );
         $active_row = self::getGameStateValue( 'active_row' );
@@ -2319,11 +2319,14 @@ class BigMonster extends Table
                 throw new BgaVisibleSystemException (clienttranslate('The card ${card_id} supposed to be in remaining cards is not in this row !'));
             }
         }
-        if (count($rem_cards) + 1 != count($cards)) {
+        if (count($rem_cards) + is_string($sel_discard) + 1 != count($cards)) {
             throw new BgaVisibleSystemException (clienttranslate("Some cards are missing in hand or too much are in DB"));
         }
         if (!in_array($sel_card, $cards)) {
             throw new BgaVisibleSystemException (clienttranslate('The selected card ${sel_card} is not in the selected row !'));
+        }
+        if (is_string($sel_discard) and !in_array($sel_discard, $cards)) {
+            throw new BgaVisibleSystemException (clienttranslate('The card ${sel_card} to discard is not in the selected row !'));
         }
         if ($sel_action == 0) {
             // selected card is to be played
@@ -2336,12 +2339,22 @@ class BigMonster extends Table
             $this->cards->moveCard($sel_card,'hand', $player_id);
             $this->cards->moveCard($rem_cards[0],'discard', $player_id);
             $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster and discarded the ${monster_kind_name_dicard} monster in the ${row_name} row');
+        } elseif ($sel_action == 4) {
+            $this->cards->moveCard($sel_card,'hand', $player_id);
+            $this->cards->moveCard($sel_discard,'discard', $player_id);
+            $log_msg = clienttranslate('${player_name} selected the ${monster_kind_name} monster and discarded the ${monster_kind_name_dicard} monster in the ${row_name} row');
         } else {
-            throw new BgaVisibleSystemException (clienttranslate("Wrong sel_action value !"));
+            throw new BgaVisibleSystemException ("Wrong sel_action value !");
         }
         $sel_row = ($source_row == 1) ? clienttranslate('upper') : clienttranslate('lower');
         $kind_monster = $this->custgetCard( $sel_card )['type'];
-        $kind_monster_discard = $this->custgetCard( $rem_cards[0] )['type'];
+        if ($sel_action == 4) {
+            $kind_monster_discard = $this->custgetCard( $sel_discard )['type'];
+            $discard_id = $sel_discard;
+        } else {
+            $kind_monster_discard = $this->custgetCard( $rem_cards[0] )['type'];
+            $discard_id = $rem_cards[0];
+        }
         self::NotifyAllPlayers("SelectedTile", $log_msg ,array(
             "player_name" => self::getPlayerNameById($player_id),
             "monster_kind_name" => $this->tiles_info[$kind_monster]['name'],
@@ -2351,12 +2364,15 @@ class BigMonster extends Table
             "card_id" => $sel_card,
             "action" => $sel_action,
             "monster_kind_name_dicard" => $this->tiles_info[$kind_monster_discard]['name'],
-            "discard_card_id" => $rem_cards[0],
+            "discard_card_id" => $discard_id,
             'i18n' => array( 'monster_kind_name' , 'row_name', 'monster_kind_name_dicard' ) )
         );
-        if ($sel_action == 0) {
+        if ($sel_action == 0 ) {
             self::setGameStateValue( 'active_row', $source_row );
-        } else {
+        } else if ($sel_action == 4) {
+            self::setGameStateValue( 'active_row', $source_row );
+            $this->gamestate->nextState( 'var_placeTile' );
+        }else {
             $this->gamestate->nextState( 'var_placeTile' );
         }
     }

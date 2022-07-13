@@ -567,12 +567,11 @@ function (dojo, declare) {
         //
         onEnteringState: function( stateName, args )
         {
-            
+            debug('onEnteringState: '+stateName);
+            debug(args);
             switch( stateName )
             {
             case 'explorerSelection':
-                debug('onEnteringState: explorerSelection');
-                debug(args);
                 if (!this.isReadOnly() || g_archive_mode) {
                     explorers = args.args['_private']['explorers'];
                     // show a popup for selecting explorer
@@ -726,6 +725,7 @@ function (dojo, declare) {
                 break;
             case 'var_tileSelection':
                 this.active_row = args.args[0];
+                dojo.query('.stockitem').removeClass('bm_unselectable')
                 if (this.active_row == 0) {
                     // reactivate all tiles
                     if (!this.isSpectator && !this.concurentselect) {
@@ -734,6 +734,12 @@ function (dojo, declare) {
                         this.lower_row.setSelectionMode( 1 );
                     }
                     dojo.query('.stockitem').removeClass('disabled')
+                } else if (this.concurentselect) {
+                    let rowname = this.active_row == 1 ? 'upper_row' : 'lower_row'
+                    let otherrowname = this.active_row == 1 ? 'lower_row' : 'upper_row'
+                    dojo.query('[id^="play"][data-row="'+rowname+'"]').addClass('bm_singleselect')
+                    dojo.query('[id^="discard"][data-row="'+rowname+'"]').addClass('bm_stock_hide')
+                    dojo.query('[id^="'+otherrowname+'_item_"]').addClass('bm_unselectable')
                 }
                 if (this.new_turn) {
                     // update the first player token position
@@ -806,6 +812,7 @@ function (dojo, declare) {
                 }
                 break;
             case 'var_placeTile':
+                dojo.query('.stockitem').addClass('bm_unselectable') // disable selection for all cards
                 dojo.query('.selected').removeClass('disabled');
                 if (this.isCurrentPlayerActive()) {
                     var pos = args.args['_private']['possibleMoves'];
@@ -1796,28 +1803,30 @@ function (dojo, declare) {
             debug('card ' + card_id + ' on row ' + rowname)
             dojo.query( "[id^=play_" ).removeClass( 'active' ); // remove all other active
             this.SelectedPlayTile = card_id;
+            let endOfRow = false;
+            let otherrowname;
             if (rowname == 'upper_row') {
                 if (this.selected_row == 2) {
                     this.SelectedDiscardTile = undefined
                 }
                 this.selected_row = 1;
-                dojo.query( "[data-row='lower_row']" ).removeClass( 'show' ); // hide icon menu on other row
-                dojo.query( "[data-row='lower_row']" ).removeClass( 'active' ); // disable selection on other row
-                let other_cards = document.querySelectorAll(".cardmenu.show[data-row='upper_row']:not(#cardmenu_"+this.SelectedPlayTile+",#cardmenu_"+this.SelectedDiscardTile+")")
-                for (var i = 0; i < other_cards.length; ++i) {
-                    other_cards[i].classList.remove('show');
-                }
+                otherrowname = 'lower_row';
             } else if (rowname == 'lower_row') {
                 if (this.selected_row == 1) {
                     this.SelectedDiscardTile = undefined
                 }
                 this.selected_row = 2;
-                dojo.query( "[data-row='upper_row']" ).removeClass( 'show' ); // hide icon menu on other row
-                dojo.query( "[data-row='upper_row']" ).removeClass( 'active' ); // disable selection on other row
-                let other_cards = document.querySelectorAll(".cardmenu.show[data-row='lower_row']:not(#cardmenu_"+this.SelectedPlayTile+",#cardmenu_"+this.SelectedDiscardTile+")")
-                for (var i = 0; i < other_cards.length; ++i) {
-                    other_cards[i].classList.remove('show');
-                }
+                otherrowname = 'upper_row';
+            }
+            dojo.query( "[data-row='"+otherrowname+"']" ).removeClass( 'show' ); // hide icon menu on other row
+            dojo.query( "[data-row='"+otherrowname+"']" ).removeClass( 'active' ); // disable selection on other row
+            let other_cards = document.querySelectorAll(".cardmenu.show[data-row='"+rowname+"']:not(#cardmenu_"+this.SelectedPlayTile+",#cardmenu_"+this.SelectedDiscardTile+")") // select other cards of the same row
+            debug('other cards', other_cards)
+            for (var i = 0; i < other_cards.length; ++i) {
+                other_cards[i].classList.remove('show');
+            }
+            if (dojo.query('.cardmenu[data-row="'+rowname+'"]').length == 2) {
+                endOfRow = true; // if there is only two card left in the row, it means only the select action is required (no discard)
             }
             dojo.addClass( 'cardmenu_'+card_id, 'show');
             dojo.addClass( 'play_'+card_id, 'active');
@@ -1832,7 +1841,13 @@ function (dojo, declare) {
                 } else {
                     dojo.removeClass( 'ValidateSelectionbutton', 'disabled');
                 }
-            } else {
+            } else if (this.SelectedPlayTile && endOfRow) {
+                if ($('ValidateSelectionbutton') == null) {
+                    this.addActionButton( 'ValidateSelectionbutton', _('Validate selection'), 'onValidateTileSelection','customActions' );
+                } else {
+                    dojo.removeClass( 'ValidateSelectionbutton', 'disabled');
+                }
+            }else {
                 $('ValidateSelectionbutton') != null && dojo.addClass( 'ValidateSelectionbutton', 'disabled');
             }
         },
@@ -1951,6 +1966,35 @@ function (dojo, declare) {
 
         onValidateTileSelection: function (s) {
             dojo.stopEvent(s);
+            let rowname = ( this.selected_row == 1 ) ? 'upper_row' : 'lower_row';
+            if (this.checkAction('var_SelectTile', true) && this.SelectedPlayTile && this.SelectedDiscardTile) {
+                let sel_action = 4 // select and discard selection
+                let unsel_cards_list = document.querySelectorAll(".cardmenu[data-row='"+rowname+"']:not(#cardmenu_"+this.SelectedPlayTile+",#cardmenu_"+this.SelectedDiscardTile+")")
+                let unsel_cards = [];
+                unsel_cards_list.forEach((elem) => {unsel_cards.push(elem.dataset.id)})
+                debug(unsel_cards)
+                debug(this.SelectedDiscardTile)
+                this.ajaxcall( '/bigmonster/bigmonster/var_selectTile.html', { lock: true, 
+                    source_row : this.selected_row,
+                    rem_cards : unsel_cards.toString(),
+                    sel_card : this.SelectedPlayTile,
+                    sel_action : sel_action,
+                    sel_discard : this.SelectedDiscardTile
+                 }, this, function( result ) {
+                    dojo.empty('customActions');
+                 } );
+            } else if (this.checkAction('var_SelectTile', true) && this.SelectedPlayTile && dojo.query('.cardmenu[data-row="'+rowname+'"]').length == 2) {
+                sel_action = 3
+                let unsel_cards = [document.querySelector(".cardmenu[data-row='"+rowname+"']:not(#cardmenu_"+this.SelectedPlayTile+")").dataset.id];
+                this.ajaxcall( '/bigmonster/bigmonster/var_selectTile.html', { lock: true, 
+                    source_row : this.selected_row,
+                    rem_cards : unsel_cards.toString(),
+                    sel_card : this.SelectedPlayTile,
+                    sel_action : sel_action
+                 }, this, function( result ) {
+                    dojo.empty('customActions');
+                 } );
+            }
         },
 
         onClickStartTile: function(s) {
@@ -2416,6 +2460,7 @@ function (dojo, declare) {
                     this.setTileToolTip(card.id, type, kind_monster, rowname);
                     let tileoptionsDiv = this.format_block('jstpl_card_menu', {tile_id : card.id, row : rowname});
                     this.concurentselect && dojo.place(tileoptionsDiv, rowname+"_item_"+card.id, "first") // add menu options
+                    this.concurentselect && this.connectbuttons(card.id)
                 }
             } else {
                 for (var loc of ['upper', 'lower']) {
@@ -2431,6 +2476,7 @@ function (dojo, declare) {
                         rowname = loc + '_row';
                         let tileoptionsDiv = this.format_block('jstpl_card_menu', {tile_id : card.id, row : rowname});
                         this.concurentselect && dojo.place(tileoptionsDiv, rowname+"_item_"+card.id, "first"); // add menu options
+                        this.concurentselect && this.connectbuttons(card.id);
                     }
                 }
                 // update the number of cards remaing (extra from new turn since 2 rows are updated here)
@@ -2562,6 +2608,16 @@ function (dojo, declare) {
                 tilerow.removeFromStockById( s.discard_card_id );
                 tilerow.unselectAll();
                 this.tile_selected = false;
+            } else if (toint(s.action) == 4) {
+                debug('in s.action == 4')
+                // card selected to play and other to discard (concurent selection mode)
+                dojo.addClass(s.row + '_row_item_' + s.card_id, 'selected');
+                dojo.query('.stockitem').addClass('bm_unselectable') // disable selection for all cards
+                this.selected_tile_id = toint(s.card_id);
+                this.selected_tile_type = s.monster_kind;
+                tilerow.removeFromStockById( s.discard_card_id );
+                this.SelectedPlayTile = undefined
+                this.SelectedDiscardTile = undefined
             }
             // disable tiles of other row
             if (s.row == 'upper' ) {

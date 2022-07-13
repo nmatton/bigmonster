@@ -73,7 +73,8 @@
         $rem_cards = self::getArg( "rem_cards", AT_numberlist, true );
         $sel_card = self::getArg( "sel_card", AT_posint, true );
         $sel_action = self::getArg( "sel_action", AT_posint, true );
-        $result = $this->game->var_selectTile($rem_cards, $sel_card, $source_row, $sel_action);
+        $sel_discard = self::getArg( "sel_discard", AT_posint, false );
+        $result = $this->game->var_selectTile($rem_cards, $sel_card, $source_row, $sel_action, $sel_discard);
         self::ajaxResponse( );
     }
 
@@ -84,7 +85,7 @@
         $result = $this->game->placeTile( $whichMove );
         self::ajaxResponse( );
     }
-    
+
     public function loadBugSQL() {
       self::setAjaxMode();
       $reportId = (int) self::getArg('report_id', AT_int, true);

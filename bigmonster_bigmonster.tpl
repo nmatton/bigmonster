@@ -214,7 +214,7 @@ var jstpl_team_banner = '<div class="team_banner" style="background-color: ${col
 var jstpl_tmp_tile = '<div id="tmp_tile_${tile_id}" class="bm_tileClass" style="background-position: -${back_x}% -${back_y}%; transform: rotate(${rot}deg);"></div>'
 var jstpl_tmp_centermaps = '<i id="general_center_btn" class="fa fa-expand" style="font-size: 1.4em;right: 0px;margin-right: 5px;color: black;cursor: pointer;"></i>'
 var jstpl_settings = '<div class="bm_settings">' + jstpl_tmp_centermaps + jstmp_medal_face_select + jstpl_helpIcon + '</div>';
-var jstpl_card_menu = '<div id="cardmenu_${tile_id}" data-row="${row}" class="cardmenu"><div class="cardmenuback"></div><div class="menulinks"><i id="play_${tile_id}" data-id="${tile_id}" data-row="${row}" class="fa fa-check bm_cardplay"></i><i id="discard_${tile_id}" data-id="${tile_id}" data-row="${row}" class="fa fa-trash bm_carddiscard"></i></div></div>'
+var jstpl_card_menu = '<div id="cardmenu_${tile_id}" data-id="${tile_id}" data-row="${row}" class="cardmenu"><div class="cardmenuback"></div><div class="menulinks"><i id="play_${tile_id}" data-id="${tile_id}" data-row="${row}" class="fa fa-check bm_cardplay"></i><i id="discard_${tile_id}" data-id="${tile_id}" data-row="${row}" class="fa fa-trash bm_carddiscard"></i></div></div>'
 
 $(function() {
     $('.bm_fitin div').css('font-size', '1em');
