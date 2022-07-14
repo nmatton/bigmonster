@@ -595,6 +595,10 @@ padding-left: 4px;
     justify-content: space-evenly;
     align-items: center;
 }
+@media only screen and (max-width: 680px) {
+    .handmedal_area { display: block; }
+    .bm_flex-container { width: 100%; }
+  }
 
   /** Hand **/
 

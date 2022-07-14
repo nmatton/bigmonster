@@ -183,7 +183,7 @@ function (dojo, declare) {
             }
             if (centerscroll) {
                 for (var t of Object.keys(gamedatas.players)) {
-                    if (this.boards.includes(t)) {
+                    if (Object.keys(this.boards).includes(t)) {
                         this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
                     }
                 }
@@ -2264,7 +2264,7 @@ function (dojo, declare) {
             dojo.subscribe( 'scoreUpdate', this, "notif_scoreUpdate" );
             this.notifqueue.setSynchronous( 'scoreUpdate', 1 );
             dojo.subscribe( 'endGame_scoring', this, "notif_endGame_scoring" );
-            let num_players = Object.keys(gameui.gamedatas.players).length;
+            let num_players = Object.keys(this.gamedatas.players).length;
             this.notifqueue.setSynchronous( 'endGame_scoring', 5000 * num_players + 3000 );
         },  
 
@@ -2359,7 +2359,7 @@ function (dojo, declare) {
                         currentTime += 500;
                     }
                 } else {
-                    Object.keys(this.gameui.gamedatas.players).forEach((player_id) => {
+                    Object.keys(this.gamedatas.players).forEach((player_id) => {
                         setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
                         this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
                         currentTime += 500;
