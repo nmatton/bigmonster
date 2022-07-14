@@ -25,7 +25,7 @@
 }
 
 html {
-    background: radial-gradient(#4d36a2, #110e13);
+    background: radial-gradient(#4d36a2, #01005e);
     background-size: cover;
     background-attachment: fixed;
 }
@@ -716,7 +716,7 @@ padding-left: 4px;
 
 .medal {
     position: absolute;
-    background-image: url(img/medals_1-4.png);
+    background-image: url(img/medals_1-4.jpg);
     background-size: 1000% auto;
     transition: transform 0.8s;
     transform-style: preserve-3d;
@@ -807,9 +807,10 @@ padding-left: 4px;
 
 .back_medal {
     position: absolute;
-    background-image: url(img/medals_1-4.png);
+    background-image: url(img/medals_1-4.jpg);
     background-size: 1000% auto;
     transform: rotateY(180deg);
+    border-radius: 50px;
 }
 
 .back_medal[data-id='1'] {

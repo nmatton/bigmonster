@@ -1619,6 +1619,10 @@ function (dojo, declare) {
             var mia_div = $('mia_'+player_id+'_'+medal_id);
             setTimeout(() => { 
                 dojo.place( this.format_block('jstpl_back_medal', {medal_id : medal_id, back_id : back_id} ), mia_div );
+                let medal_type = (medal_id>10)?2:1;
+                let info_id = toint((medal_id>10) ? Math.floor(medal_id/10):medal_id);
+                let medal_info =  (medal_type == 1 ) ? this.gamedatas.help_medals[medal_id]['name'] : this.gamedatas.help_medals[info_id]['name_team'];
+                this.addTooltip( 'medal_'+medal_id, _(medal_info), '', 0 )
             }, totdelay);
             setTimeout(() => { dojo.destroy('stock_'+medal_id);}, 100);
         },
@@ -2784,6 +2788,10 @@ function (dojo, declare) {
                     dojo.place(tmp_medal, mia_div, 'first')},duration+delay);
                 setTimeout(() => { 
                     dojo.place( this.format_block('jstpl_back_medal', {medal_id : s.medal_id, back_id : s.back_id} ), mia_div );
+                    let medal_type = (s.medal_id>10)?2:1;
+                    let info_id = toint((s.medal_id>10) ? Math.floor(s.medal_id/10):s.medal_id);
+                    let medal_info =  (medal_type == 1 ) ? this.gamedatas.help_medals[s.medal_id]['name'] : this.gamedatas.help_medals[info_id]['name_team'];
+                    this.addTooltip( 'medal_'+s.medal_id, _(medal_info), '', 0 )
                 }, duration+delay+10);
             }
             if (this.isTeamPlay && s.medal_id <= 10) {
