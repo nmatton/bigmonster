@@ -724,6 +724,15 @@ function (dojo, declare) {
             case 'var_tileSelection':
                 this.active_row = args.args[0];
                 dojo.query('.stockitem').removeClass('bm_unselectable')
+                let rowname = this.active_row == 1 ? 'upper_row' : 'lower_row';
+                debug('this.active_row', this.active_row)
+                debug('active row '+ rowname);
+                debug(dojo.query('.cardmenu[data-row="'+rowname+'"]'))
+                debug(dojo.query('.cardmenu[data-row="'+rowname+'"]').length)
+                if (this.isCurrentPlayerActive()) {
+                    this.addActionButton( 'ValidateSelectionbutton', _('Validate selection'), 'onValidateTileSelection','customActions' );
+                    dojo.addClass( 'ValidateSelectionbutton', 'disabled');
+                }
                 if (this.active_row == 0) {
                     // reactivate all tiles
                     if (!this.isSpectator && !this.concurentselect) {
@@ -732,7 +741,7 @@ function (dojo, declare) {
                         this.lower_row.setSelectionMode( 1 );
                     }
                     dojo.query('.stockitem').removeClass('disabled')
-                } else if (this.concurentselect) {
+                } else if (this.concurentselect && (dojo.query('.cardmenu[data-row="'+rowname+'"]').length == 2 || dojo.query('.cardmenu[data-row="'+rowname+'"]').length == 3)) {
                     let rowname = this.active_row == 1 ? 'upper_row' : 'lower_row'
                     let otherrowname = this.active_row == 1 ? 'lower_row' : 'upper_row'
                     dojo.query('[id^="play"][data-row="'+rowname+'"]').addClass('bm_singleselect')
@@ -2306,7 +2315,7 @@ function (dojo, declare) {
             }
             if (this.hidescore) {
                 for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
-                    $('player_score_' + pid).innerHTML=bd[pid]['total'];
+                    $('player_score_' + pid).innerHTML=bd[pid]['score'];
                 }
             }
            },

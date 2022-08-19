@@ -423,34 +423,6 @@ class BigMonster extends Table
         In this space, you can put any utility methods useful for your game logic
     */
 
-    // ! ------ TESTING AND DEBUG FUNCTIONS ! //
-	public function LoadDebug()
-	{
-		// These are the id's from the BGAtable I need to debug.
-		$ids = [
-			32557384,
-			83985428,
-			85602234,
-			84795355
-		];
-
-		// Id of the first player in BGA Studio
-		$sid = 2356482;
-		
-		foreach ($ids as $id) {
-			// basic tables
-			self::DbQuery("UPDATE player SET player_id=$sid WHERE player_id = $id" );
-			self::DbQuery("UPDATE global SET global_value=$sid WHERE global_value = $id" );
-			self::DbQuery("UPDATE stats SET stats_player_id=$sid WHERE stats_player_id = $id" );
-
-			// 'other' game specific tables. example:
-			// tables specific to your schema that use player_ids
-			self::DbQuery("UPDATE card SET card_location_arg=$sid WHERE card_location_arg = $id" );
-			
-			++$sid;
-		}
-	}
-
   /*
    * loadBug: in studio, type loadBug(20762) into the table chat to load a bug report from production
    * client side JavaScript will fetch each URL below in sequence, then refresh the page
@@ -1581,7 +1553,7 @@ class BigMonster extends Table
                 }
                 break;
             case 6:
-                // indiv : 4 mutagenic monsters -- team : 12 mutagenic monsters
+                // indiv : 4 mutagenic monsters -- team : 8 mutagenic monsters
                 if ($teamid == -1) {
                     $explorer_infos = $this->getExplorer();
                     $mutagenic_tiles = $this->custgetCardsOfTypeInLocation(2,null,'board',$player_id);
@@ -1597,7 +1569,7 @@ class BigMonster extends Table
                 } else if ($this->isTeamPlay() and !$get_details and $teamid > -1) {
                     $team_player_ids = $this->getTeamPlayers($teamid);
                     $tot_mutagenic_tiles = $this->checkMedalSuccess($medal_id, $team_player_ids[0], false, $teamid, true) + $this->checkMedalSuccess($medal_id, $team_player_ids[1], false, $teamid, true);
-                    if ($tot_mutagenic_tiles >= 12) {
+                    if ($tot_mutagenic_tiles >= 8) {
                         return true;
                     }
                 } else if($get_details){

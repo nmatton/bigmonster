@@ -125,9 +125,9 @@ $machinestates = array(
 
     11 => array(
         "name" => "var_tileSelection",
-        "description" => clienttranslate('${actplayer} must select a tile to play'),
+        "description" => clienttranslate('${actplayer} must select a tile to play and a tile to discard'),
         "descriptiondiscard" => clienttranslate('${actplayer} must select a tile to discard'),
-        "descriptionmyturn" => clienttranslate('${you} must select a tile to play'),
+        "descriptionmyturn" => clienttranslate('${you} must select a tile to play and a tile to discard'),
         "descriptionmyturndiscard" => clienttranslate('${you} must select a tile to discard'),
         "type" => "activeplayer",
         "possibleactions" => array( "var_SelectTile" ),

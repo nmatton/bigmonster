@@ -107,35 +107,7 @@ $game_options = array(
                 'value' => 3,
                 'message' => totranslate('Exactly 3 players are required for this option.'))
         ),
-            'startcondition' => array(
-                1 => array(array(
-                    'type' => 'minplayers',
-                    'value' => 3,
-                    'message' => totranslate('Exactly 3 players are required for this option.'),
-                    'gamestartonly' => true,
-                ),
-                array(
-                    'type' => 'maxplayers',
-                    'value' => 3,
-                    'message' => totranslate('Exactly 3 players are required for this option.'),
-                    'gamestartonly' => true,
-                )),
-                2 => array(
-                    array(
-                        'type' => 'minplayers',
-                        'value' => 3,
-                        'message' => totranslate('Exactly 3 players are required for this option.'),
-                        'gamestartonly' => true,
-                    ),
-                    array(
-                        'type' => 'maxplayers',
-                        'value' => 3,
-                        'message' => totranslate('Exactly 3 players are required for this option.'),
-                        'gamestartonly' => true,
-                    )
-                ),
-            ),
-            'notdisplayedmessage' => totranslate('3 players table variant (draft or variant)')
+        'notdisplayedmessage' => totranslate('3 players table variant (draft or variant)')
     )
 );
 
