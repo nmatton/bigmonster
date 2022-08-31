@@ -1782,6 +1782,7 @@ class BigMonster extends Table
         $cards_info = $this->getCardsOnBoard($player_id);
         $bigmonster_counted = array();
         $bigmonster_alone = array();
+        $explorer_infos = $this->getExplorer();
         foreach ($cards_info as $card_id => $card_details) {
             switch (intval($card_details['card_type'])) {
                 case 1:
@@ -1877,6 +1878,10 @@ class BigMonster extends Table
                         case 8:
                             # 3 / desert tile
                             $grassland_pts += 3 * count($this->custgetCardsOfTypeInLocation(7,null,'board',$player_id));
+                            $explorer_infos = $this->getExplorer();
+                            if ($explorer_infos[intval($player_id)]['explorer_id'] == 12) {
+                                $explorer_infos += 3;
+                            }
                             break;
                         case 9:
                             # 2 / grassland tile

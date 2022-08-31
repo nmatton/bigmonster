@@ -192,7 +192,7 @@ $this->monster_infos = array(
     7=> array('name' => clienttranslate('Grassland monster'),
               'descr' => clienttranslate('4 points per complete bigmonster')),
     8=> array('name' => clienttranslate('Grassland monster'),
-              'descr' => clienttranslate('2 points per desert tile')),
+              'descr' => clienttranslate('3 points per desert tile')),
     9=> array('name' => clienttranslate('Grassland monster'),
               'descr' => clienttranslate('2 points per grassland tile (this one included)')),
   ),
