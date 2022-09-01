@@ -1880,7 +1880,7 @@ class BigMonster extends Table
                             $grassland_pts += 3 * count($this->custgetCardsOfTypeInLocation(7,null,'board',$player_id));
                             $explorer_infos = $this->getExplorer();
                             if ($explorer_infos[intval($player_id)]['explorer_id'] == 12) {
-                                $explorer_infos += 3;
+                                $grassland_pts += 3;
                             }
                             break;
                         case 9:
