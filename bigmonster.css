@@ -73,47 +73,6 @@ html {
 	background-color: rgba(224, 232, 255, .56);
 }
 
-.scroller_noclick, .scroller_clickable {
-    position: absolute;
-    top: 205px;
-    left:  315px;
-}
-.scroller_surface {
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    width: 100%;
-    height: 100%;
-    cursor: move;
-}
-.movetop,.moveleft,.moveright,.movedown {
-    display: block;
-    position: absolute;
-    background-image: url('../../../img/common/arrows.png');
-    width: 32px;
-    height: 32px;
-}
-.movetop {
-    top: 0px;
-    left: 50%;
-    background-position: 0px 32px;
-}
-.moveleft {
-    top: 50%;
-    left: 0px;
-    background-position: 32px 0px;
-}
-.moveright {
-    top: 50%;
-    right: 0px;
-    background-position: 0px 0px;
-}
-.movedown {
-    bottom: 0px;
-    left: 50%;
-    background-position: 32px 32px;
-}
-
  .scrollmap_wrapper{
     width: 46%;
     margin: 10px;
@@ -201,22 +160,11 @@ padding-left: 4px;
     border-top-right-radius: 30px 70px;
 }
 
-#zoom_buttons{
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 30px;
-    height: 60px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    z-index: 3;
-    color: #efefefcf;
-}
-
-#zoom_buttons > i.fa {
-    cursor: pointer;
-}
+/*.scrollmap_icon.btn_pos_top_right {
+    --icon_font_size:1.7em !important;
+    --margin_x: 0px !important;
+    --margin_y: 0px !important;
+}*/
 
 .player_info_team:after{
     border-color : transparent transparent transparent transparent;
@@ -987,7 +935,7 @@ justify-content: space-between; */
     width: 90%;
     max-width: 463px;
 	margin: -100px -150px;
-	z-index: 10;
+	z-index: 11;
 }
 
 #bm_popup .bm_popin_title {

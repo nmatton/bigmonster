@@ -23,14 +23,16 @@ define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
     "ebg/counter",
-    "ebg/scrollmap",
     "ebg/stock",
     g_gamethemeurl + "modules/scroller.js",
     g_gamethemeurl + 'modules/modal.js',
+    './modules/scrollmapWithZoom',
+    './modules/core_patch_tooltip_show',
 ],
 function (dojo, declare) {
     return declare("bgagame.bigmonster", ebg.core.gamegui, {
         constructor: function(){
+            this._tooltipDelay = 400;
             this.SCALE = 100;
             this.tiledwidth = 50;
             this.tileheight = 100;
@@ -74,7 +76,7 @@ function (dojo, declare) {
                  if (this.hidescore) {
                     debug(this.gamedatas.players)
                     for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
-                        pid = Object.keys(this.gamedatas.players)[o];
+                        let pid = Object.keys(this.gamedatas.players)[o];
                         debug(pid)
                         $('player_score_' + pid).innerHTML='?';
                         this.addTooltip( 'player_score_' + pid, _('live score is hidden by table option'), '', 10 )
@@ -83,6 +85,7 @@ function (dojo, declare) {
               },
         setup: function( gamedatas )
         {
+            bIncrHeightBtnVisible = true;
             // Create a new div for buttons to avoid BGA auto clearing it
             dojo.place("<div id='customActions' style='display:inline-block'></div>", $('generalactions'), 'after');
             this.isTeamPlay = gamedatas.isTeamPlay;
@@ -101,7 +104,12 @@ function (dojo, declare) {
             if (!this.isTeamPlay) {
                 // individual game setup
                 for (var t of Object.keys(gamedatas.players)) {
-                    this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
+                    let s = new ebg.scrollmapWithZoom();
+                    s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
+                    s.bIncrHeightGlobally = bIncrHeightBtnVisible;
+                    s.btnResetClasses = "fa fa-expand";
+                    s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
+                    this.boards[t] = new Scroller(s,t, 0);
                 }
                 if (this.isSpectator) {
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
@@ -120,13 +128,17 @@ function (dojo, declare) {
                             break
                     }
                 }
-                centerscroll = true;
             } else if (this.isTeamPlay && this.team_defined) {
                 this.team_ui_setup = true;
                 // team setup -- only create scroll area when teams are defined - nothing to show otherwise
                 this.player_team = this.teams[this.currentPlayer];
                 for (var t of  Object.keys(gamedatas.players)) {
-                    this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
+                    let s = new ebg.scrollmapWithZoom();
+                    s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
+                    s.bIncrHeightGlobally = bIncrHeightBtnVisible;
+                    s.btnResetClasses = "fa fa-expand";
+                    s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
+                    this.boards[t] = new Scroller(s,t, 0);
                 }
                 this.teams_ordered = [];
                  this.teams_values.forEach(element => {
@@ -149,7 +161,7 @@ function (dojo, declare) {
                                     color : '#'+team_color,
                                     team_nr: toint(team) + 1
                                 });
-                                player_board = $('player_board_'+e)
+                                let player_board = $('player_board_'+e)
                                 dojo.place( tbDiv , player_board);
                             }
                         });
@@ -168,7 +180,7 @@ function (dojo, declare) {
                         color : '#'+team_color,
                         team_nr: toint(this.player_team) + 1
                     });
-                    player_board = $('player_board_'+this.player_id)
+                    let player_board = $('player_board_'+this.player_id)
                     dojo.place( tbDiv , player_board);
 
                     // place other teams player's scroll areas just after current player's scroll area
@@ -178,14 +190,6 @@ function (dojo, declare) {
                     // add banner on player miniboard
                     player_board = $('player_board_'+teammate)
                     dojo.place( tbDiv , player_board);
-                }
-                centerscroll = true;
-            }
-            if (centerscroll) {
-                for (var t of Object.keys(gamedatas.players)) {
-                    if (Object.keys(this.boards).includes(t)) {
-                        this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
-                    }
                 }
             }
 
@@ -199,9 +203,9 @@ function (dojo, declare) {
                 this.placeTile(i, explorer_id,explorer_id, 0,0,0,1,0);
                 let explo_info = gamedatas.help_explorers[explorer_id]['descr'];
                 if (this.nums_of_players >= 4 || this.is3pdraft) {
-                    this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) , _('draft cards to this player'), 10 )
+                    this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) , _('draft cards to this player'), this._tooltipDelay )
                 } else {
-                    this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) ,'', 10 )
+                    this.addTooltip( 'tile_e_'+explorer_id, _(explo_info) ,'', this._tooltipDelay )
                 }
             }
             if (this.nums_of_players >= 4 || this.is3pdraft) {
@@ -217,7 +221,8 @@ function (dojo, declare) {
                 let mutation = toint(this.gamedatas.cardsonboard[card_id]['mutation']);
                 let tileNum = (monster_type - 1 ) * 10 + monster_kind - 1;
                 const [x, y, rot] = this.convert_coord(this.gamedatas.cardsonboard[card_id]['board_x'] , this.gamedatas.cardsonboard[card_id]['board_y'], monster_type); 
-                this.placeTile(player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                let bti = this.placeTile(player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                this.setTileToolTip2(bti, monster_type, monster_kind);
             }
 
             // ** SCORING BOARD SETUP ** //
@@ -414,7 +419,7 @@ function (dojo, declare) {
                 let maDiv = this.format_block('jstpl_player_board_medal_zone', {
                     player_id : t
                 });
-                player_board = $('player_board_'+t)
+                let player_board = $('player_board_'+t)
                 dojo.place( maDiv , player_board);
             }
             this.medals_status = [];
@@ -441,12 +446,12 @@ function (dojo, declare) {
                             type : medal_type,
                             back_id : back_id
                         });
-                        medal_area = $('medals')
+                        let medal_area = $('medals')
                         dojo.place( cardDiv , medal_area);
                         this.medals_status[medal_id] = false;
                     } else {
                         // add the medal to the player area
-                        location_id_list = location_id.split(',');
+                        let location_id_list = location_id.split(',');
                         location_id_list.forEach(element => {
                             let player_id = toint(element);
                             var player_medal_zone_div = $('ma_'+player_id);
@@ -571,12 +576,12 @@ function (dojo, declare) {
             {
             case 'explorerSelection':
                 if (!this.isReadOnly() || g_archive_mode) {
-                    explorers = args.args['_private']['explorers'];
+                    let explorers = args.args['_private']['explorers'];
                     // show a popup for selecting explorer
                     // active only for players (not for spectators)
                     if (explorers.length == 2 || g_archive_mode) {
                         // only process when choice is still possible (if length < 2, it means that the player already made its choice)
-                        popupcontent = '<div id="bm_popup" class ="bm_popin"><h2 id="popin_playersHelp_title" class="bm_popin_title">'+_('Select a starting explorer')+'</h2><div id="selectingExploDiv">'
+                        let popupcontent = '<div id="bm_popup" class ="bm_popin"><h2 id="popin_playersHelp_title" class="bm_popin_title">'+_('Select a starting explorer')+'</h2><div id="selectingExploDiv">'
                         for (var i = 0; i < explorers.length; i++) {
                             popupcontent += '<div id="explo' + i + '">'
                             var explo_id = explorers[i]['explorer_id'];
@@ -600,9 +605,14 @@ function (dojo, declare) {
                     this.teams = args.args['team'];
                     this.teams_values = Object.values(this.teams).filter(this.onlyUnique)
                     this.team_ui_setup = true;
-                    player_team = this.teams[this.currentPlayer];
+                    let player_team = this.teams[this.currentPlayer];
                     for (var t of  Object.keys(this.gamedatas.players)) {
-                        this.boards[t] = new Scroller(ebg.scrollmap(),t, 0);
+                        let s = new ebg.scrollmapWithZoom();
+                        s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
+                        s.bIncrHeightGlobally = bIncrHeightBtnVisible;
+                        s.btnResetClasses = "fa fa-expand";
+                        s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
+                        this.boards[t] = new Scroller(s,t, 0);
                     }
                     this.teams_ordered = [];
                     this.teams_values.forEach(element => {
@@ -629,7 +639,7 @@ function (dojo, declare) {
                                         color : '#'+team_color,
                                         team_nr: toint(team) + 1
                                     });
-                                    player_board = $('player_board_'+e)
+                                    let player_board = $('player_board_'+e)
                                     dojo.place( tbDiv , player_board);
                                 }
     
@@ -650,7 +660,7 @@ function (dojo, declare) {
                             color : '#'+team_color,
                             team_nr: toint(player_team) + 1
                         });
-                        player_board = $('player_board_'+this.player_id)
+                        let player_board = $('player_board_'+this.player_id)
                         dojo.place( tbDiv , player_board);
 
                         // place other teams player's scroll areas just after current player's scroll area
@@ -661,11 +671,6 @@ function (dojo, declare) {
                         // add banner on player miniboard
                         player_board = $('player_board_'+teammate)
                         dojo.place( tbDiv , player_board);
-                    }
-                    for (var t of Object.keys(this.gamedatas.players)) {
-                        if (this.boards[t]) {
-                            this.boards[t].scrollTo(-this.SCALE / 2, -this.SCALE / 2)
-                        }
                     }
                     // set the scoring table
                     this.setTeamsScoringBoard();
@@ -721,10 +726,10 @@ function (dojo, declare) {
                     dojo.destroy(node);
                 });
                 break;
-            case 'var_tileSelection':
+            case 'var_tileSelection': 
                 this.active_row = args.args[0];
                 dojo.query('.stockitem').removeClass('bm_unselectable')
-                let rowname = this.active_row == 1 ? 'upper_row' : 'lower_row';
+                var rowname = this.active_row == 1 ? 'upper_row' : 'lower_row';
                 debug('this.active_row', this.active_row)
                 debug('active row '+ rowname);
                 debug(dojo.query('.cardmenu[data-row="'+rowname+'"]'))
@@ -815,8 +820,9 @@ function (dojo, declare) {
                             let mutation = toint(args.args['_private'][prop]['mutation']);
                             let card_id = prop;
                             let tileNum = (monster_type - 1 ) * 10 + monster_kind - 1;
-                            const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);
-                            this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                            const [x, y, rot] = this.convert_coord(args.args['_private'][prop]['board_x'] , args.args['_private'][prop]['board_y'], monster_type);                           
+                            let bti = this.placeTile(this.player_id, tileNum, card_id,  x, y, rot, 0, mutation);
+                            this.setTileToolTip2(bti, monster_type, monster_kind);
                         }
                     }
                 }
@@ -1056,12 +1062,6 @@ function (dojo, declare) {
             dojo.style('page-content', 'zoom', '');
             dojo.style('page-title', 'zoom', '');
             dojo.style('right-side-first-part', 'zoom', '');
-            // recentering play areras
-            if (typeof this.boards !== 'undefined') {
-                for (var t of Object.keys(this.gamedatas.players)) {
-                    if(this.boards.length > 0) this.boards[t].onCenter()
-                }
-            }
         },
 
         toggleMedalFace() {
@@ -1091,7 +1091,7 @@ function (dojo, declare) {
             for (var team in this.teams_ordered) {
                 var teamno = 1;
                 for (var pid in this.teams_ordered[team]) {
-                    player_id = this.teams_ordered[team][pid];
+                    let player_id = this.teams_ordered[team][pid];
                     var player = this.gamedatas.players[player_id];
                     let splitPlayerName = '';
                     let chars = player.name.split("");
@@ -1147,6 +1147,11 @@ function (dojo, declare) {
         
         setTileToolTip: function(id, type, kind_monster, location='myhand') {
             debug('add tooltip to '+id+' with type : '+type+' and kind : '+kind_monster+ ' on location :  ' + location);
+            this.setTileToolTip2( location+'_item_'+id, type, kind_monster);    
+        },
+
+        setTileToolTip2: function(id, type, kind_monster) {
+            debug('add tooltip to '+id+' with type : '+type+' and kind : '+kind_monster);
             if ( [3,5,7].includes(toint(type)) ) {
                 var monster_name = this.gamedatas.help_monsters[toint(type)]['name'];
                 var monster_descr = this.gamedatas.help_monsters[toint(type)]['descr'];
@@ -1159,7 +1164,7 @@ function (dojo, declare) {
             } else {
                 var rot = '';
             }
-            this.addTooltipHtml( location+'_item_'+id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile tooltipWiggle' style='background-position: -"+(toint(kind_monster)-1)*100+"% -"+(toint(type)-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", 10 );    
+            this.addTooltipHtml( id, "<div style='width: 250px; text-align: center;'><div><h3>"+_(monster_name)+"</h3><hr></div><div class='bm_tileClass tooltip_tile tooltipWiggle' style='background-position: -"+(toint(kind_monster)-1)*100+"% -"+(toint(type)-1)*100+"%; "+rot+"'></div><br><p>"+_(monster_descr)+"</p></div>", this._tooltipDelay );    
         },
 
         tileHtml: function(e, id, s, t, b=0, i=0, m=0) {
@@ -1201,7 +1206,7 @@ function (dojo, declare) {
             i && (c = '"position:relative; display:inline-block; margin:10px auto; cursor:pointer; ');
             return '<div id="tile_' + id + '" class="'+ iclass +'" style=' + (c += "background-position: -" + 100 * r + "% -" + 100 * a + '%"; data-x="'+100*s+'"; data-y="'+100 *t+'"') + ">" + n + "</div>"
         },
-        placeTile: function(s, t, id,  o, i, l, b=0, m=0) {
+        placeTile: function(s, t, id,  o, i, l, b=0, m=0, onEnd=null) {
             /* 
                 Place a tile on board of a specific player
 
@@ -1215,6 +1220,7 @@ function (dojo, declare) {
                 b(=0) : big tile to place (the explorer tile)
                 m(=0) : mutated tile
             */
+                let bti;
             if (b) {
                 bti = 'e_'+id;
             } else {
@@ -1239,7 +1245,8 @@ function (dojo, declare) {
                     dojo.style(this.node, "transform", "rotate(" + parseFloat(s.propertyTransform.replace("px", "")) + "deg)")
                 }
             }).play();
-            this.boards[s].moveIdToPos(this, "tile_" + bti, o * this.SCALE, i * this.SCALE, b, 300)
+            this.boards[s].moveIdToPos(this, "tile_" + bti, o * this.SCALE, i * this.SCALE, b, 300, 0, onEnd)
+            return "tile_" + bti;
         },
 
         sendCardToShip: function(player_id)
@@ -1281,6 +1288,7 @@ function (dojo, declare) {
 
         addPossiblePlacement: function(x,y,d)
         {
+            let className;
             if (d == "U" || d == "D") {
                 className = "possibleMoveV";
             } else {
@@ -1952,6 +1960,7 @@ function (dojo, declare) {
                 var tilerow = ( this.selected_row == 1 ) ? this.upper_row : this.lower_row;
                 var sel_cards_list = tilerow.getSelectedItems();
                 var unsel_cards_list = tilerow.getUnselectedItems();
+                let sel_action;
                 if (unsel_cards_list.length == 1) {
                     sel_action = 3
                     unsel_cards = unsel_cards_list[0]['id'];
@@ -1965,7 +1974,7 @@ function (dojo, declare) {
                     sel_action = 1
                     var unsel_cards = [];
                     for (var i in unsel_cards_list) {
-                        card_id = unsel_cards_list[i]['id']
+                        let card_id = unsel_cards_list[i]['id']
                         if (unsel_cards_list[i]['id'] != this.selected_tile_id) {
                             unsel_cards.push(unsel_cards_list[i]['id'])
                         }
@@ -2004,7 +2013,7 @@ function (dojo, declare) {
                     dojo.empty('customActions');
                  } );
             } else if (this.checkAction('var_SelectTile', true) && this.SelectedPlayTile && dojo.query('.cardmenu[data-row="'+rowname+'"]').length == 2) {
-                sel_action = 3
+                let sel_action = 3
                 let unsel_cards = [document.querySelector(".cardmenu[data-row='"+rowname+"']:not(#cardmenu_"+this.SelectedPlayTile+")").dataset.id];
                 this.ajaxcall( '/bigmonster/bigmonster/var_selectTile.html', { lock: true, 
                     source_row : this.selected_row,
@@ -2302,7 +2311,7 @@ function (dojo, declare) {
              }
            },
        
-          setScoringRowWinner: function(player_id, teamid=0, bd = breakdowns) {
+          setScoringRowWinner: function(player_id, teamid=0, bd ) {
             dojo.addClass($('scoring-row-name-p' + player_id), 'wavetext');
             
             let stages = ['ice', 'bigmonster', 'lava', 'grassland', 'swamp', 'diamonds', 'explorer', 'medal', 'total'];
@@ -2315,6 +2324,7 @@ function (dojo, declare) {
             }
             if (this.hidescore) {
                 for (var o =  Object.keys(this.gamedatas.players).length - 1; o >= 0; o--) {
+                    var pid = Object.keys(this.gamedatas.players)[o];
                     $('player_score_' + pid).innerHTML=bd[pid]['score'];
                 }
             }
@@ -2336,8 +2346,8 @@ function (dojo, declare) {
             let breakdowns = notif.args.breakdowns;
             let winnerIds = notif.args.winner_ids;
             if (this.isTeamPlay) {
-                teamscores = notif.args.team_scores;
-                teamwinId = notif.args.winning_team;
+                var teamscores = notif.args.team_scores;
+                var teamwinId = notif.args.winning_team;
             }
             
             // show the final scoring table
@@ -2366,7 +2376,7 @@ function (dojo, declare) {
                 if (this.isTeamPlay) {
                     let player_list = this.teams_ordered.flat()
                     for( let i in player_list ) {
-                        player_id = player_list[i];
+                        let player_id = player_list[i];
                         setTimeout(this.setScoringRowText.bind(this, stage, player_id, breakdowns[player_id][breakdownStage]), currentTime);
                         this.setScoringRowText.bind(stage, player_id, breakdowns[player_id][breakdownStage]);
                         currentTime += 500;
@@ -2392,9 +2402,9 @@ function (dojo, declare) {
             currentTime -= 250;
             if (this.isTeamPlay) {
                 for (let i in teamwinId) {
-                    teamid = teamwinId[i];
+                    let teamid = teamwinId[i];
                     for (let j in this.teams_ordered[teamid]) {
-                        player_id = this.teams_ordered[teamid][j];
+                        let player_id = this.teams_ordered[teamid][j];
                         debug("single team win")
                         debug(player_id)
                         setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),teamid, breakdowns), currentTime);
@@ -2402,7 +2412,7 @@ function (dojo, declare) {
                 }
             } else {
                 for (let i in winnerIds) {
-                    player_id = winnerIds[i];
+                    let player_id = winnerIds[i];
                     debug(player_id)
                     setTimeout(this.setScoringRowWinner.bind(this, toint(player_id),0,breakdowns), currentTime);
                 }
@@ -2413,7 +2423,7 @@ function (dojo, declare) {
         {
             debug('notif_selectedExplorers');
             debug(notif);
-            var s = notif.args
+            var s = notif.args;
             this.explorers[s.player_id] = {'player_id': s.player_id, 'explorer_id': s.explorer_id}
             if (s.player_id == this.player_id) {
                 this.explorer_id = s.explorer_id;
@@ -2422,9 +2432,9 @@ function (dojo, declare) {
             dojo.query('#tile_e_' + s.explorer_id).connect('onclick', this, 'onClickExplo');
             let explo_info = this.gamedatas.help_explorers[s.explorer_id]['descr'];
             if (this.nums_of_players >= 4 || this.is3pdraft) {
-                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) , _('draft cards to this player'), 10 )
+                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) , _('draft cards to this player'), this._tooltipDelay )
             } else {
-                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) ,'', 10 )
+                this.addTooltip( 'tile_e_'+s.explorer_id, _(explo_info) ,'', this._tooltipDelay )
             }
 
         },
@@ -2484,7 +2494,7 @@ function (dojo, declare) {
                 }
             } else {
                 for (var loc of ['upper', 'lower']) {
-                    loc_cards = cards[loc];
+                    let loc_cards = cards[loc];
                     var tilerow = (loc == 'upper') ? this.upper_row : this.lower_row;
                     tilerow.removeAll()
                     for (var i in loc_cards) {
@@ -2493,7 +2503,7 @@ function (dojo, declare) {
                         let kind_monster = card.type_arg;
                         tilerow.addToStockWithId(this.getCardUniqueId(type, kind_monster), card.id);
                         this.setTileToolTip(card.id, type, kind_monster, loc+'_row');
-                        rowname = loc + '_row';
+                        let rowname = loc + '_row';
                         let tileoptionsDiv = this.format_block('jstpl_card_menu', {tile_id : card.id, row : rowname});
                         this.concurentselect && dojo.place(tileoptionsDiv, rowname+"_item_"+card.id, "first"); // add menu options
                         this.concurentselect && this.connectbuttons(card.id);
@@ -2595,7 +2605,7 @@ function (dojo, declare) {
         notif_SelectedTile : function (notif) {
             debug('notif_SelectedTile')
             debug(notif)
-            s = notif.args;
+            var s = notif.args;
             if (s.row == 'upper') {
                 var tilerow = this.upper_row;
                 this.active_row = 1;
@@ -2666,23 +2676,25 @@ function (dojo, declare) {
                 for (const element in s) {
                     if (element != "player_name") {
                         if (s[element].player_id != this.player_id) {
-                            kind_monster = s[element].kind;
-                            type = 1; // ice monster
-                            tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
+                            let kind_monster = s[element].kind;
+                            let type = 1; // ice monster
+                            let tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
                             const [x, y, rot] = this.convert_coord(s[element].x , s[element].y, type);
                             dojo.destroy("tile_"+s[element].card_id);
-                            this.placeTile(s[element].player_id, tileNum, s[element].card_id, x , y , rot, 0, toint(s[element].mutation_level));
+                            let bti = this.placeTile(s[element].player_id, tileNum, s[element].card_id, x , y , rot, 0, toint(s[element].mutation_level));
+                            this.setTileToolTip2(bti, type, kind_monster);
                         }
                     }
                 }
             } else {
                 s.forEach(element => {
-                    kind_monster = element.kind;
-                    type = 1; // ice monster
-                    tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
+                    let kind_monster = element.kind;
+                    let type = 1; // ice monster
+                    let tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
                     const [x, y, rot] = this.convert_coord(element.x , element.y, type);
                     dojo.destroy("tile_"+element.card_id);
-                    this.placeTile(element.player_id, tileNum, element.card_id, x , y , rot, 0, toint(element.mutation_level));
+                    let bti = this.placeTile(element.player_id, tileNum, element.card_id, x , y , rot, 0, toint(element.mutation_level));
+                    this.setTileToolTip2(bti, type, kind_monster);
                 });
             }
 
@@ -2695,25 +2707,26 @@ function (dojo, declare) {
             debug(notif);
             var s = notif.args
             // skip when it's the player's board
+            let kind_monster = s.kind_monster;
+            let type = s.type_monster;
+            let tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
             if (this.player_id != s.player_id || g_archive_mode || typeof g_replayFrom != 'undefined') {
                 // tile played by other player -> add it to its board
-                kind_monster = s.kind_monster;
-                type = s.type_monster;
-                tileNum = (toint(type) - 1) * 10 + toint(kind_monster) - 1;
                 const [x, y, rot] = this.convert_coord(s.x , s.y, type);
                 // move tile from hand to board
                 // create a phantom block to move the tile to
-                phantomId = 'phantomplace_'+s.x+'*'+s.y;
+                let phantomId = 'phantomplace_'+s.x+'*'+s.y;
                 var html = '<div id="'+phantomId+'" class="phantomplace" style="'+
                     'top:'+(y*this.SCALE/2)+'px; left:'+(x*this.SCALE*2)+'px; width:50px; height:50px; position:absolute'+
                     '"></div>';
                 debug('created the html snippet : '+html);
                 this.boards[s.player_id].addHtml(html,0);
                 debug('added the html snippet to the board');
+                let tileId;
                 if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let rowname = (this.active_row == 1) ? 'upper_row' : 'lower_row';
                     tileId = rowname+"_item_"+s.card_id;
-                    clone_tile = $(tileId).cloneNode()
+                    let clone_tile = $(tileId).cloneNode()
                     clone_tile.id = 'clone_'+tileId;
                     tileId = 'clone_'+tileId;
                     dojo.place(clone_tile,rowname); //upper_row_item_97
@@ -2731,12 +2744,15 @@ function (dojo, declare) {
                 }
                 this.slideToObjectAndDestroy( tileId , phantomId, 1000, 0 );
                 debug('slided the tile to the phantom place');
-                setInterval(dojo.destroy("phantomplace_"+s.x+"*"+s.y), 1100);
+                setTimeout(dojo.destroy("phantomplace_"+s.x+"*"+s.y), 1100);
                 debug('destroyed the phantom place');
                 if (toint(s.mutation) > 0) {
                     dojo.destroy("tile_"+s.card_id);
                 }
-                setInterval(this.placeTile(s.player_id, tileNum, s.card_id, x , y , rot, 0, toint(s.mutation_level) ),990);
+                setTimeout(()=>{
+                    let bti = this.placeTile(s.player_id, tileNum, s.card_id, x , y , rot, 0, toint(s.mutation_level) );
+                    this.setTileToolTip2(bti, type, kind_monster);
+                },990);
                 if (this.nums_of_players < 4 &&  !this.is3pdraft) {
                     let tilerow = (this.active_row == 1) ? this.upper_row : this.lower_row;
                     debug('update the tile row');
@@ -2751,6 +2767,7 @@ function (dojo, declare) {
                 } else {
                     this.playerHand.removeFromStockById( s.card_id );
                 }
+                this.setTileToolTip2("tile_"+s.card_id, type, kind_monster);
             }
             if (this.isSpectator && document.querySelector('*[id^="tileOnShip_"]') ) {
                 Object.keys(this.gamedatas.players).forEach(
@@ -2779,7 +2796,7 @@ function (dojo, declare) {
             var target = $('ma_'+s.player_id)
             var position = 'last'
             dojo.place( miaDiv, target, position );
-            medal_team_id = (s.medal_id > 10) ? 2 : 1;
+            let medal_team_id = (s.medal_id > 10) ? 2 : 1;
             if (!this.medals_status[s.medal_id]) {
                 this.slideToObjectRelative( "medal_" + s.medal_id + "_" + medal_team_id, "mia_" + s.player_id+"_"+s.medal_id, duration, delay, 'first', this.addBackMedal(s.medal_id, s.back_id, s.player_id, duration+delay) );
                 this.medals_status[s.medal_id] = true;
