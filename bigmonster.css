@@ -30,6 +30,13 @@ html {
     background-attachment: fixed;
 }
 
+#page-title.fixed-page-title {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 948;
+    opacity: 0.8;
+}
 
 /** Scrollable area **/
 #map_container {

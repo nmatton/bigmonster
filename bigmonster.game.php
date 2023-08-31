@@ -101,128 +101,128 @@ class BigMonster extends Table
                 if ($type_id == 4) {
                     // lava monsters
                     switch ($kind_monster) {
-                        case 1:
+                        case 1: // blue rb
                             $nbr_players = array(
                                 '2' => 2,
-                                '3' => 4,
+                                '3' => 1,
                                 '4' => 2,
                                 '5' => 3,
                                 '6' => 4);
-                                break;
-                        case 2:
+                            break; //ok
+                        case 2: // blue rt
                             $nbr_players = array(
                                 '2' => 4,
-                                '3' => 6,
+                                '3' => 3,
                                 '4' => 4,
                                 '5' => 5,
                                 '6' => 6);
-                                break;
-                        case 3:
+                            break; //ok
+                        case 3: //green
                             $nbr_players = array(
                                 '2' => 7,
-                                '3' => 11,
+                                '3' => 5,
                                 '4' => 7,
                                 '5' => 9,
                                 '6' => 11);
-                            break;
+                            break; //ok
                         default:
                             $nbr_players = array(
                                 '2' => 2,
-                                '3' => 3,
+                                '3' => 2,
                                 '4' => 2,
                                 '5' => 3,
                                 '6' => 3);
-                        break;
+                            break; //ok
                     }
                     $nbr = $nbr_players[self::getPlayersNumber()];
                 } elseif ($type_id == 8) {
                     // rune
                     switch ($kind_monster) {
-                        case 1:
+                        case 1: // double
                             $nbr_players = array(
                                 '2' => 1,
-                                '3' => 2,
+                                '3' => 1,
                                 '4' => 1,
                                 '5' => 2,
                                 '6' => 2);
-                            break;
-                        case 2:
+                            break; //ok
+                        case 2: // green
                             $nbr_players = array(
                                 '2' => 2,
-                                '3' => 3,
+                                '3' => 1,
                                 '4' => 2,
                                 '5' => 2,
                                 '6' => 3);
-                            break;
-                        case 4:
+                            break; //ok
+                        case 4: //blue b
                             $nbr_players = array(
                                 '2' => 1,
-                                '3' => 2,
+                                '3' => 1,
                                 '4' => 1,
                                 '5' => 2,
                                 '6' => 2);
-                            break;
-                        case 5:
+                            break; //ok
+                        case 5: //rt
                             $nbr_players = array(
                                 '2' => 2,
-                                '3' => 4,
+                                '3' => 1,
                                 '4' => 2,
                                 '5' => 3,
                                 '6' => 4);
-                            break;
-                        case 6:
+                            break; //ok
+                        case 6: //rb
                             $nbr_players = array(
                                 '2' => 2,
-                                '3' => 3,
+                                '3' => 1,
                                 '4' => 2,
                                 '5' => 2,
                                 '6' => 3);
                             break;
-                        default:
+                        default: // = case 3 : bt
                             $nbr_players = array(
                                 '2' => 2,
                                 '3' => 2,
                                 '4' => 2,
                                 '5' => 2,
                                 '6' => 2);
-                            break;
+                            break; //ok
                     }
                     $nbr = $nbr_players[self::getPlayersNumber()];
                 } elseif ($type_id == 6) {
                     // grassland
                     switch ($kind_monster) {
-                        case 1:
+                        case 1: //2p/green crystal
                             $nbr_players = array(
                                 '2' => 1,
-                                '3' => 1,
+                                '3' => 0,
                                 '4' => 1,
                                 '5' => 0,
                                 '6' => 1);
-                            break;
-                        case 3:
+                            break; //ok
+                        case 3: // 1p/complete crystal
                             $nbr_players = array(
                                 '2' => 0,
-                                '3' => 1,
+                                '3' => 0,
                                 '4' => 0,
                                 '5' => 1,
                                 '6' => 1);
-                            break;
-                        case 6:
+                            break; //ok
+                        case 6: //1pts/lava
                             $nbr_players = array(
                                 '2' => 0,
-                                '3' => 1,
+                                '3' => 0,
                                 '4' => 0,
                                 '5' => 1,
                                 '6' => 1);
-                            break;
-                        case 9:
+                            break; //ok
+                        case 9: //2p/grassland
                             $nbr_players = array(
                                 '2' => 0,
-                                '3' => 1,
+                                '3' => 0,
                                 '4' => 0,
                                 '5' => 1,
                                 '6' => 1);
-                            break;                        
+                            break;     //ok                   
                         default:
                             $nbr_players = array(
                                 '2' => 1,
@@ -230,7 +230,7 @@ class BigMonster extends Table
                                 '4' => 1,
                                 '5' => 1,
                                 '6' => 1);
-                            break;
+                            break; //ok
                     }
                     $nbr = $nbr_players[self::getPlayersNumber()];
                 } else {

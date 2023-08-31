@@ -49,7 +49,7 @@ $this->tiles_info = array(
   1 => array( 'name' => clienttranslate('ice'),
               'nbr' => array(
                 '2' => 4,
-                '3' => 6,
+                '3' => 3,
                 '4' => 4,
                 '5' => 5,
                 '6' => 6),
@@ -57,7 +57,7 @@ $this->tiles_info = array(
   2 => array( 'name' => clienttranslate('mutagenic'),
               'nbr' => array(
               '2' => 4,
-              '3' => 6,
+              '3' => 3,
               '4' => 4,
               '5' => 5,
               '6' => 6),
@@ -65,7 +65,7 @@ $this->tiles_info = array(
   3 => array( 'name' => clienttranslate('bigmonster'),
               'nbr' => array(
                 '2' => 5,
-                '3' => 8,
+                '3' => 3,
                 '4' => 5,
                 '5' => 6,
                 '6' => 8),
@@ -86,7 +86,7 @@ $this->tiles_info = array(
   7 => array( 'name' => clienttranslate('desert'),
               'nbr' => array(
                 '2' => 8,
-                '3' => 11,
+                '3' => 6,
                 '4' => 8,
                 '5' => 9,
                 '6' => 11
