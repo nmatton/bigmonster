@@ -248,10 +248,13 @@ class BigMonster extends Table
                             );
                             break; //ok
                     }
-                    $nbr = $nbr_players[self::getPlayersNumber()];
                 } else {
-                    // the same number of tile for a given amount of players, whatever the type of monster
-                    $nbr = $tile_type['nbr'][self::getPlayersNumber()];
+                    $nbr_players = $tile_type['nbr'];
+                }
+                if (self::getPlayersNumber() == 3 && !$this->is3pdraft()) {
+                    $nbr = $nbr_players[6];
+                } else {
+                    $nbr = $nbr_players[self::getPlayersNumber()];
                 }
                 $cards[] = array('type' => $type_id, 'type_arg' => $kind_monster, 'nbr' => $nbr);
             }
