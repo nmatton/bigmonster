@@ -100,16 +100,16 @@ function (dojo, declare) {
             this.boards = [];
             this.hidescore = gamedatas.hidescore;
             this.is3pdraft = gamedatas.is3pdraft;
-            centerscroll = false;
             if (!this.isTeamPlay) {
                 // individual game setup
                 for (var t of Object.keys(gamedatas.players)) {
                     let s = new ebg.scrollmapWithZoom();
                     s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
                     s.bIncrHeightGlobally = bIncrHeightBtnVisible;
-                    s.btnResetClasses = "fa fa-expand";
+                    // s.btnResetClasses = "fa fa-expand";
                     s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
                     this.boards[t] = new Scroller(s,t, 0);
+                    s.setupOnScreenResetButtons(ebg.scrollmapWithZoom.ResetMode.ScrollAndZoom);
                 }
                 if (this.isSpectator) {
                     for (var o =  Object.keys(gamedatas.players).length - 1; o >= 0; o--)
@@ -136,9 +136,10 @@ function (dojo, declare) {
                     let s = new ebg.scrollmapWithZoom();
                     s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
                     s.bIncrHeightGlobally = bIncrHeightBtnVisible;
-                    s.btnResetClasses = "fa fa-expand";
+                    // s.btnResetClasses = "fa fa-expand";
                     s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
                     this.boards[t] = new Scroller(s,t, 0);
+                    s.setupOnScreenResetButtons(ebg.scrollmapWithZoom.ResetMode.ScrollAndZoom);
                 }
                 this.teams_ordered = [];
                  this.teams_values.forEach(element => {
@@ -610,9 +611,10 @@ function (dojo, declare) {
                         let s = new ebg.scrollmapWithZoom();
                         s.bIncrHeightBtnVisible = bIncrHeightBtnVisible;
                         s.bIncrHeightGlobally = bIncrHeightBtnVisible;
-                        s.btnResetClasses = "fa fa-expand";
+                        // s.btnResetClasses = "fa fa-expand";
                         s.startPosition = {x:this.SCALE / 2, y:this.SCALE / 2};
                         this.boards[t] = new Scroller(s,t, 0);
+                        s.setupOnScreenResetButtons(ebg.scrollmapWithZoom.ResetMode.ScrollAndZoom);
                     }
                     this.teams_ordered = [];
                     this.teams_values.forEach(element => {

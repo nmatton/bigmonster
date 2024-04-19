@@ -143,7 +143,10 @@
       <div id="{PLAYER_ID}_scrollmap_noclick" class="scroller_noclick"> </div>
       <div class="scroller_surface">
       </div>
-      <div id="{PLAYER_ID}_scrollmap_clickable" class="scroller_clickable"> </div>
+      <div id="{PLAYER_ID}_scrollmap_clickable" class="scroller_clickable">
+      </div>
+      <a class="enlargedisplay fa fa-arrow-down scrollmap_icon btn_pos_top_left" style="--index_y: 1;"></a>
+      <a class="reducedisplay fa fa-arrow-up scrollmap_icon btn_pos_top_left" style="--index_y: 0;"></a>
     </div>
    </div>
    <!-- END ScrollerBlock -->
