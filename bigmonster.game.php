@@ -79,7 +79,10 @@ class BigMonster extends Table
             $color = array_shift($default_colors);
             $values[] = "('" . $player_id . "','$color','" . $player['player_canal'] . "','" . addslashes($player['player_name']) . "','" . addslashes($player['player_avatar']) . "')";
         }
-        $sql .= implode($values, ',');
+        foreach ($values as $value) {
+            $sql .= $value . ',';
+        }
+        $sql = rtrim($sql, ',');
         self::DbQuery($sql);
         self::reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         self::reloadPlayersBasicInfos();
@@ -498,7 +501,11 @@ class BigMonster extends Table
             // e.g., quietmint0, quietmint1, quietmint2, etc. are at the table
             $studioPlayer++;
         }
-        $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
+        $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul>";
+        foreach ($sql as $query) {
+            $msg .= "<li>$query;</li>";
+        }
+        $msg .= "</ul>";
         self::warn($msg);
         self::notifyAllPlayers('message', $msg, []);
 
@@ -1043,7 +1050,15 @@ class BigMonster extends Table
 
     protected function moveCardsFromTo($cards, $from_location, $to_location, $from_location_arg = null, $to_location_arg = null)
     {
-        $cards_id_str = implode("','", $cards);
+        $cards_id_str = '';
+        foreach ($cards as $index => $card) {
+            // Append the card with quotes
+            $cards_id_str .= "'$card'";
+            // Append a comma and quotes between elements
+            if ($index < count($cards) - 1) {
+                $cards_id_str .= "','";
+            }
+        }
         if (!is_null($from_location_arg) or !is_null($to_location_arg)) {
             if (!is_null($from_location_arg) and !is_null($to_location_arg)) {
                 # from_location_arg and from_location_arg filled
@@ -3076,7 +3091,13 @@ class BigMonster extends Table
             $lowest_player = $this->checkMedalSuccess(7);
             if (count($lowest_player) == self::getPlayersNumber()) $lowest_team = array(); # noone gets the medals since all are at min
             if (count($lowest_player) > 1) {
-                $player_id_list = implode(',', $lowest_player);
+                $player_id_list = '';
+                foreach ($lowest_player as $index => $player_id) {
+                    $player_id_list .= $player_id;
+                    if ($index < count($lowest_player) - 1) {
+                        $player_id_list .= ',';
+                    }
+                }
                 $this->setMedalAttribution($player_id_list, 7);
                 for ($i = 0; $i < count($lowest_player); $i++) {
                     $player_id = $lowest_player[$i];
